@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trade Bay — Professional trading platforms, paid for once</title>
+<meta name="description" content="Sierra Chart, ATAS, ATAS X, Bookmap and MotiveWave with lifetime licences, installed and kept current by one Windows launcher. $119.99 per platform.">
+<meta name="theme-color" content="#0e0e11">
+<link rel="icon" href="assets/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=5">
+<script>requestAnimationFrame(function(){document.documentElement.classList.add('motion')})</script>
+</head>
+<body>
+<canvas class="rays" data-rays aria-hidden="true"></canvas>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="nav__inner">
+    <a class="brand" href="#top" aria-label="Trade Bay home">
+      <svg class="brand__mark" viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="11" width="3" height="7" rx="1"/><rect x="8.5" y="6" width="3" height="12" rx="1"/><rect x="15" y="2" width="3" height="16" rx="1"/></svg>
+      <span>Trade Bay</span>
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#platforms">Platforms</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav__actions">
+      <a class="btn btn--ghost btn--sm nav__download" href="/download/TradeBaySetup.exe">Download launcher</a>
+      <button class="cart-btn" type="button" data-open-cart aria-label="Open cart, 0 items">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h2l1.6 8.2a1 1 0 0 0 1 .8h6.9a1 1 0 0 0 1-.8L17 7H6"/><circle cx="8" cy="16.5" r="1.2"/><circle cx="14" cy="16.5" r="1.2"/></svg>
+        <span class="cart-btn__count" data-cart-count>0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============ Hero: demo-led ============ -->
+  <section class="hero" aria-labelledby="hero-title" data-hero>
+    <div class="hero__stage" data-stage>
+      <div class="hero__grid wrap">
+        <div class="hero__copy" data-hero-copy>
+          <p class="status"><span class="status__dot" aria-hidden="true"></span>Authorized reseller · Lifetime licences</p>
+          <h1 id="hero-title">Every serious trading platform. One launcher. Paid&nbsp;once.</h1>
+          <p class="lede">Sierra Chart, ATAS, ATAS&nbsp;X, Bookmap and MotiveWave, licensed through Trade Bay and installed by one Windows launcher that keeps them up to date. <strong>$119.99 per platform</strong>, yours for good.</p>
+          <div class="hero__ctas">
+            <a class="btn btn--primary" href="#platforms">Browse platforms</a>
+            <a class="btn btn--ghost" href="/download/TradeBaySetup.exe">Download launcher</a>
+          </div>
+          <ul class="proof mono" aria-label="Highlights">
+            <li>5 platforms</li>
+            <li>One-time payment</li>
+            <li>Signed, verified updates</li>
+            <li>Launches offline</li>
+          </ul>
+        </div>
+
+        <figure class="terminal hero__terminal" data-wall-slot="0" style="--hue: var(--hue-bm)" aria-label="Animated illustration of a live order book heatmap">
+          <div class="terminal__bar">
+            <span class="terminal__tile mono">BM</span>
+            <span class="terminal__title">Bookmap</span>
+            <span class="terminal__sym mono">ESZ6</span>
+            <span class="terminal__px mono" data-hero-price>—</span>
+            <span class="terminal__chg mono" data-hero-chg></span>
+          </div>
+          <div class="terminal__body terminal__body--hero">
+            <canvas class="scene" data-scene="heatmap" data-ticker="hero"></canvas>
+          </div>
+          <figcaption class="terminal__foot mono"><span>Liquidity heatmap · depth 40</span><span>Illustration</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="wall" data-wall role="group" aria-label="Animated illustrations of the other four platforms">
+        <figure class="terminal wall__panel" data-wall-slot="1" style="--hue: var(--hue-sc)">
+          <div class="terminal__bar">
+            <span class="terminal__tile mono">SC</span>
+            <span class="terminal__title">Sierra Chart</span>
+            <span class="terminal__sym mono">ESZ6</span>
+            <span class="terminal__ver mono">$119.99</span>
+          </div>
+          <div class="terminal__body terminal__body--wall"><canvas class="scene" data-wall-scene="sc"></canvas></div>
+        </figure>
+        <figure class="terminal wall__panel" data-wall-slot="2" style="--hue: var(--hue-atas)">
+          <div class="terminal__bar">
+            <span class="terminal__tile mono">AT</span>
+            <span class="terminal__title">ATAS</span>
+            <span class="terminal__sym mono">NQZ6</span>
+            <span class="terminal__ver mono">$119.99</span>
+          </div>
+          <div class="terminal__body terminal__body--wall"><canvas class="scene" data-wall-scene="atas"></canvas></div>
+        </figure>
+        <figure class="terminal wall__panel" data-wall-slot="3" style="--hue: var(--hue-mw)">
+          <div class="terminal__bar">
+            <span class="terminal__tile mono">MW</span>
+            <span class="terminal__title">MotiveWave</span>
+            <span class="terminal__sym mono">CLZ6</span>
+            <span class="terminal__ver mono">$119.99</span>
+          </div>
+          <div class="terminal__body terminal__body--wall"><canvas class="scene" data-wall-scene="mw"></canvas></div>
+        </figure>
+        <figure class="terminal wall__panel" data-wall-slot="4" style="--hue: var(--hue-ax)">
+          <div class="terminal__bar">
+            <span class="terminal__tile mono">AX</span>
+            <span class="terminal__title">ATAS X</span>
+            <span class="terminal__sym mono">NQZ6</span>
+            <span class="terminal__ver mono">$119.99</span>
+          </div>
+          <div class="terminal__body terminal__body--wall"><canvas class="scene" data-wall-scene="ax"></canvas></div>
+        </figure>
+      </div>
+      <p class="wall__caption" data-wall-caption aria-hidden="true">Five platforms <span>·</span> one licence each <span>·</span> one launcher</p>
+    </div>
+  </section>
+
+  <!-- ============ Platforms: launcher list + live product view ============ -->
+  <section class="section" id="platforms" aria-labelledby="platforms-title">
+    <div class="wrap">
+      <div class="section__head">
+        <h2 id="platforms-title">Pick your platform</h2>
+        <p>Each one is the vendor's full build, delivered and updated by the launcher. Buy one, or all five.</p>
+      </div>
+      <div class="chips" role="group" aria-label="Find your fit">
+        <span class="chips__label">Find your fit</span>
+        <button type="button" class="chip" data-pick="atas" style="--hue: var(--hue-atas)">Order flow <span>ATAS</span></button>
+        <button type="button" class="chip" data-pick="bm" style="--hue: var(--hue-bm)">Liquidity <span>Bookmap</span></button>
+        <button type="button" class="chip" data-pick="sc" style="--hue: var(--hue-sc)">Speed &amp; code <span>Sierra Chart</span></button>
+        <button type="button" class="chip" data-pick="mw" style="--hue: var(--hue-mw)">Waves &amp; Fib <span>MotiveWave</span></button>
+        <button type="button" class="chip" data-pick="ax" style="--hue: var(--hue-ax)">Fast sessions <span>ATAS X</span></button>
+      </div>
+
+      <div class="showcase">
+        <div class="showcase__list" role="tablist" aria-label="Platforms" aria-orientation="vertical" data-tabs></div>
+        <div class="showcase__panel" data-panel role="tabpanel" tabindex="0">
+          <figure class="terminal showcase__terminal">
+            <div class="terminal__bar">
+              <span class="terminal__tile mono" data-p="mono"></span>
+              <span class="terminal__title" data-p="name"></span>
+              <span class="terminal__sym mono" data-p="sym"></span>
+              <span class="terminal__ver mono" data-p="verLabel"></span>
+            </div>
+            <div class="terminal__body terminal__body--show">
+              <canvas class="scene" data-scene="footprint" data-seed="3" data-showcase></canvas>
+            </div>
+            <figcaption class="terminal__foot mono"><span data-p="view"></span><span>Illustration</span></figcaption>
+          </figure>
+
+          <div class="detail">
+            <div class="detail__main">
+              <h3 class="detail__name" data-p="name"></h3>
+              <p class="detail__tag" data-p="tagline"></p>
+              <ul class="detail__features" data-p="features"></ul>
+            </div>
+            <aside class="detail__buy" aria-label="Purchase">
+              <dl class="specs">
+                <div><dt>Version</dt><dd class="mono" data-p="version"></dd></div>
+                <div><dt>Licence</dt><dd>Lifetime</dd></div>
+                <div><dt>System</dt><dd>Windows 10/11, 64-bit</dd></div>
+                <div><dt>Best for</dt><dd data-p="bestFor"></dd></div>
+              </dl>
+              <div class="detail__price">
+                <span class="price mono" data-p="price"></span>
+                <span class="price__note">one-time</span>
+              </div>
+              <button class="btn btn--primary btn--block" type="button" data-add-current>Add to cart</button>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ How it works: real sequence ============ -->
+  <section class="section" id="how" aria-labelledby="how-title">
+    <div class="wrap how">
+      <div class="how__copy">
+        <div class="section__head section__head--left">
+          <h2 id="how-title">From checkout to chart in four steps</h2>
+          <p>The Trade Bay launcher installs, verifies and opens everything you own.</p>
+        </div>
+        <ol class="steps">
+          <li><span class="steps__n mono">01</span><div><h3>Buy your platforms</h3><p>Pay once at checkout. Your licence key arrives by email straight away.</p></div></li>
+          <li><span class="steps__n mono">02</span><div><h3>Install the launcher</h3><p>One small Windows installer. No separate setup for each platform.</p></div></li>
+          <li><span class="steps__n mono">03</span><div><h3>Paste your key</h3><p>The platforms you bought unlock. The licence binds to the first PC you activate.</p></div></li>
+          <li><span class="steps__n mono">04</span><div><h3>Launch</h3><p>Only new or changed files are downloaded, and each one is checked against a signed manifest before it runs.</p></div></li>
+        </ol>
+      </div>
+      <figure class="shot">
+        <img src="assets/launcher.jpg" width="1440" height="900" loading="lazy" alt="The Trade Bay launcher showing Sierra Chart, ATAS, Bookmap, MotiveWave and ATAS X in a sidebar, with an Activate license button">
+        <figcaption class="mono">Trade Bay launcher · v1.0</figcaption>
+      </figure>
+    </div>
+
+    <div class="wrap">
+      <ul class="pillars">
+        <li><h3>Pay once</h3><p>A lifetime licence for each platform. No subscription to cancel.</p></li>
+        <li><h3>Always the current build</h3><p>Updates come through the launcher as signed, verified releases. You only download what changed.</p></li>
+        <li><h3>Works when we're offline</h3><p>A cached, signed licence lets your platforms start even if our server can't be reached.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ Pricing: ledger ============ -->
+  <section class="section" id="pricing" aria-labelledby="pricing-title">
+    <div class="wrap pricing">
+      <div class="section__head section__head--left">
+        <h2 id="pricing-title">One price. Yours for life.</h2>
+        <p>Every platform is $119.99, one time. Pick as many as you trade with.</p>
+      </div>
+      <div class="ledger" role="table" aria-label="Platform prices">
+        <div class="ledger__row ledger__row--head" role="row">
+          <span role="columnheader">Platform</span>
+          <span role="columnheader" class="ledger__ver">Version</span>
+          <span role="columnheader" class="ledger__lic">Licence</span>
+          <span role="columnheader" class="ledger__amt">Price</span>
+          <span role="columnheader"><span class="sr-only">Action</span></span>
+        </div>
+        <div data-ledger></div>
+        <div class="ledger__row ledger__row--total" role="row">
+          <span role="cell">All five platforms</span>
+          <span role="cell" class="ledger__ver"></span>
+          <span role="cell" class="ledger__lic">Lifetime</span>
+          <span role="cell" class="ledger__amt mono" data-all-price></span>
+          <span role="cell"><button class="btn btn--primary btn--sm" type="button" data-add-all>Add all</button></span>
+        </div>
+      </div>
+      <p class="fine">Prices in USD. Data feeds and broker connections are set up inside each platform and are not included.</p>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="wrap faq">
+      <div class="section__head section__head--left">
+        <h2 id="faq-title">Questions</h2>
+        <p>Anything else: <a href="mailto:support@tradebay.io">support@tradebay.io</a></p>
+      </div>
+      <div class="faq__list">
+        <details><summary>Is this the real platform?</summary><p>Yes. Trade Bay is an authorized reseller. You get the vendor's own build, delivered and kept current by the Trade Bay launcher.</p></details>
+        <details><summary>What does lifetime mean?</summary><p>You pay once and the licence does not expire. There is no renewal or subscription.</p></details>
+        <details><summary>How many computers can I use?</summary><p>A licence binds to the first PC you activate it on. If you replace that machine, email support and we'll reset the binding.</p></details>
+        <details><summary>Do I need to stay online?</summary><p>Only to activate and to download updates. After that, a cached, signed licence lets your platforms launch offline.</p></details>
+        <details><summary>Is market data included?</summary><p>No. Data feeds and broker connections are chosen and paid for separately, inside each platform, exactly as with a direct purchase.</p></details>
+        <details><summary>What do I need to run it?</summary><p>Windows 10 or 11, 64-bit. Each platform has its own hardware guidance; Sierra Chart is the lightest, ATAS X benefits most from a dedicated GPU.</p></details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <svg class="wordmark" viewBox="0 0 1000 200" role="img" aria-label="Trade Bay" data-wordmark>
+      <text class="wordmark__outer" x="500" y="150" text-anchor="middle">TradeBay</text>
+      <text class="wordmark__inner" x="500" y="150" text-anchor="middle">TradeBay</text>
+    </svg>
+    <div class="footer__row">
+      <nav aria-label="Footer">
+        <a href="#platforms">Platforms</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="mailto:support@tradebay.io">Support</a>
+      </nav>
+      <p class="mono footer__status"><span class="status__dot" aria-hidden="true"></span>license.tradebay.io</p>
+    </div>
+    <p class="fine">© 2026 Trade Bay. Sierra Chart, ATAS, Bookmap and MotiveWave are trademarks of their respective owners; Trade Bay sells them as an authorized reseller. Trading futures and other leveraged products carries substantial risk of loss.</p>
+  </div>
+</footer>
+
+<!-- ============ Cart ============ -->
+<dialog class="cart" data-cart aria-labelledby="cart-title">
+  <div class="cart__head">
+    <h2 id="cart-title">Your cart</h2>
+    <button class="icon-btn" type="button" data-close-cart aria-label="Close cart">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>
+    </button>
+  </div>
+  <ul class="cart__items" data-cart-items></ul>
+  <div class="cart__empty" data-cart-empty>
+    <p>Nothing in your cart yet.</p>
+    <a class="btn btn--ghost btn--sm" href="#platforms" data-close-cart>Browse platforms</a>
+  </div>
+  <div class="cart__foot">
+    <div class="cart__total"><span>Total</span><span class="mono" data-cart-total>$0.00</span></div>
+    <button class="btn btn--primary btn--block" type="button" data-checkout>Continue to checkout</button>
+    <p class="fine">One-time payment. Licence key by email.</p>
+  </div>
+</dialog>
+
+<div class="toast" role="status" aria-live="polite" data-toast></div>
+
+<script src="rays.js?v=5" defer></script>
+<script src="app.js?v=5" defer></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+# secrets and local state
+.env
+*.env
+*.pem
+*.key
+*.db
+*.db-*
+server/.env
+server/data.db
+server/data.db-*
+server/app.db
+server/signing_key.pem
+server/app/signing_key.pem
+server/storage/
+server/atas_x_test/
+server/*.log
+server/server.out.log
+server/server.err.log
+server/tok*
+server/r_*.json
+server/*_files.txt
+backups/
+
+# build outputs and dependencies
+client/build/
+client/*.txt
+!client/CMakeLists.txt
+admin/node_modules/
+admin/dist/
+marketing/video/node_modules/
+marketing/video/out/
+marketing/video/qc/
+__pycache__/
+*.pyc
+
+# packages and binaries
+*.zip
+*.tar*
+*.7z
+*.exe
+*.dll
+*.obj
+*.pdb
+*.ilk
+
+# installer directory: keep script and icon only
+installer/*
+!installer/tradebay.ico
+!installer/tradebay.iss
+
+# test artifacts
+testdata/marker.exe
+testdata/marker_ran.txt
+
+# ide and assistant metadata
+.claude/
+.zcode/
+.taste-skill/
+.vs/
+.vscode/
+*.user

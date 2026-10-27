@@ -1,0 +1,5 @@
+<RCC>
+  <qresource>
+    <file alias="app.html">html/app.html</file>
+  </qresource>
+</RCC>

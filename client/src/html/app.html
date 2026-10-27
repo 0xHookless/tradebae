@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trade Bay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Style: data terminal (dark). Every selection is a 1px accent line; colour stays on status. */
+:root {
+  --ground: #0e0e11;
+  --chrome: #121215;
+  --surface: #19191e;
+  --raised: #25252b;
+  --hover: #1e1e24;
+  --border: #2d2d35;
+  --rule: #232329;
+  --control: #45454e;
+  --text: #ffffff;
+  --soft: #cacbd0;
+  --muted: #9c9ea6;
+  --accent: #4a8ad6;
+  --positive: #44a282;
+  --negative: #e5566f;
+  --warning: #d9a441;
+  --pill-positive-bg: #15302a; --pill-positive-ink: #5fc39c;
+  --pill-negative-bg: #2c1a20; --pill-negative-ink: #e5566f;
+  --pill-warning-bg: #2a2416; --pill-warning-ink: #d9a441;
+  --pill-accent-bg: #172840;  --pill-accent-ink: #7fb0ea;
+  --pill-neutral-bg: #26262c; --pill-neutral-ink: #bdbdc0;
+  --shadow: 0 12px 28px rgba(0, 0, 0, .28);
+  --radius-card: 6px;
+  --radius-chip: 4px;
+  --radius-control: 999px;
+  --row-height: 42px;
+  --rail: 56px;
+  --gap: 24px;
+  --pad: 32px;
+  --control-height: 34px;
+  --fs-title: 26px; --fs-section: 20px; --fs-card: 16px; --fs-body: 13px; --fs-small: 12px;
+  --font: "Public Sans", Inter, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --dur: 160ms;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden;
+  background: var(--ground); color: var(--text);
+  font: 400 var(--fs-body)/1.5 var(--font);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: default; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #2a292d; border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ================= Window shell =================
+   rows: 40 title bar / 1fr / 26 status bar
+   cols: 56 rail / 1fr canvas                       */
+.window {
+  position: relative; height: 100vh;
+  display: grid; grid-template-rows: 40px 1fr 26px; grid-template-columns: var(--rail) 1fr;
+  grid-template-areas: "title title" "rail main" "status status";
+  user-select: none; -webkit-user-select: none;
+}
+.window input, .console, .logtable { user-select: text; -webkit-user-select: text; }
+
+.titlebar { grid-area: title; display: flex; align-items: center; gap: 12px; padding-left: 16px; border-bottom: 1px solid var(--border); background: var(--chrome); }
+.titlebar .name { font-weight: 600; letter-spacing: -0.01em; }
+.titlebar .crumb { color: var(--muted); }
+.titlebar .fill { flex: 1; align-self: stretch; }
+.winctl { display: flex; align-self: stretch; }
+.winctl button { width: 46px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+.winctl button:hover { background: var(--raised); color: var(--text); }
+.winctl .close:hover { background: #b43a46; color: #fff; }
+
+/* Global license control */
+.lic-btn {
+  height: 28px; padding: 0 14px; border-radius: var(--radius-control);
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: var(--fs-small); font-weight: 600;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), transform 100ms var(--ease);
+}
+.lic-btn.unlicensed { background: #fff; color: #0d0d0f; border: 1px solid #fff; }
+.lic-btn.unlicensed:hover { background: #e7e7e9; }
+.lic-btn.licensed { background: transparent; color: var(--soft); border: 1px solid var(--control); }
+.lic-btn.licensed:hover { border-color: #55555a; color: var(--text); }
+.lic-btn:active { transform: scale(.97); }
+
+.rail { grid-area: rail; display: flex; flex-direction: column; align-items: stretch; padding: 8px 0; border-right: 1px solid var(--border); background: var(--chrome); }
+.rail-btn {
+  position: relative; height: 44px; border: 0; background: transparent; color: var(--muted);
+  display: grid; place-items: center;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.rail-btn:hover { color: var(--text); background: var(--hover); }
+.rail-btn[aria-current="page"] { color: var(--text); }
+.rail-btn[aria-current="page"]::after { content: ""; position: absolute; right: -1px; top: 12px; bottom: 12px; width: 1px; background: var(--accent); }
+.rail-btn .badge { position: absolute; top: 10px; right: 14px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.rail .push { flex: 1; }
+.tip { position: relative; }
+.tip[data-tip]:hover::before {
+  content: attr(data-tip); position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+  padding: 4px 8px; border-radius: var(--radius-chip); background: var(--raised); color: var(--text);
+  font-size: var(--fs-small); white-space: nowrap; box-shadow: var(--shadow); z-index: 40; pointer-events: none;
+}
+
+.main { grid-area: main; position: relative; min-height: 0; min-width: 0; overflow: hidden; }
+.view { height: 100%; min-height: 0; }
+.view[hidden] { display: none; }
+
+.statusbar { grid-area: status; display: flex; align-items: center; gap: 18px; padding: 0 16px; border-top: 1px solid var(--border); background: var(--chrome); font-size: 11px; color: var(--muted); }
+.statusbar .item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.statusbar .grow { flex: 1; }
+.statusbar .mono { font-size: 11px; }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.pos { background: var(--positive); } .dot.neg { background: var(--negative); } .dot.warn { background: var(--warning); } .dot.acc { background: var(--accent); }
+
+/* ================= Controls ================= */
+.btn {
+  height: var(--control-height); padding: 0 16px; border-radius: var(--radius-control);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+  border: 1px solid var(--control); background: transparent; color: var(--text); font-weight: 500;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease), transform 100ms var(--ease), opacity var(--dur);
+}
+.btn:hover:not(:disabled) { border-color: #55555a; background: var(--hover); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .4; }
+.btn-primary { background: #fff; border-color: #fff; color: #0d0d0f; font-weight: 600; }
+.btn-primary:hover:not(:disabled) { background: #e7e7e9; border-color: #e7e7e9; }
+.btn-ghost { border-color: transparent; color: var(--soft); padding: 0 10px; }
+.btn-ghost:hover:not(:disabled) { background: var(--raised); border-color: transparent; color: var(--text); }
+.btn-danger { border-color: transparent; background: var(--negative); color: #170a0d; font-weight: 600; }
+.btn-danger:hover:not(:disabled) { background: #ee6f85; }
+.btn-lg { height: 40px; padding: 0 22px; font-size: 14px; }
+.btn-run { background: var(--pill-positive-bg); border-color: transparent; color: var(--pill-positive-ink); }
+.spinner { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid currentColor; border-right-color: transparent; animation: spin 700ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.input {
+  width: 100%; height: 40px; padding: 0 12px; border-radius: var(--radius-card);
+  background: var(--ground); border: 1px solid var(--control); color: var(--text);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.input::placeholder { color: #7d7f87; }
+.input:hover:not(:focus):not([readonly]) { border-color: #4a4a4f; }
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(74, 138, 214, .18); }
+.input[aria-invalid="true"] { border-color: var(--negative); }
+.input.mono { font-size: 13px; letter-spacing: .02em; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 14px; font-weight: 500; }
+.hint { font-size: var(--fs-small); color: var(--muted); }
+.error { display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--negative); }
+.error[hidden] { display: none; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row > .grow { flex: 1; min-width: 0; }
+
+.switch { position: relative; flex: none; width: 28px; height: 16px; padding: 0; border-radius: 999px; border: 0; background: var(--control); transition: background var(--dur) var(--ease); }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #d0d0d3; transition: transform var(--dur) var(--ease); }
+.switch[aria-checked="true"] { background: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(12px); background: #fff; }
+
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 8px; border-radius: var(--radius-chip); font-size: var(--fs-small); font-weight: 500; white-space: nowrap; background: var(--pill-neutral-bg); color: var(--pill-neutral-ink); }
+.pill.pos { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.pill.neg { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.pill.warn { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.pill.acc { background: var(--pill-accent-bg); color: var(--pill-accent-ink); }
+
+/* Platform mark: neutral tile, letters only */
+.mark { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-chip); background: var(--raised); color: var(--soft); font: 500 11px var(--mono); letter-spacing: .02em; }
+.mark.lg { width: 56px; height: 56px; border-radius: var(--radius-card); font-size: 16px; color: var(--text); }
+
+/* ================= Library ================= */
+.library { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+.lib-side { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); }
+.lib-head { display: flex; align-items: baseline; justify-content: space-between; padding: 24px 20px 12px; }
+.lib-head h2 { margin: 0; font-size: var(--fs-section); font-weight: 400; color: var(--muted); letter-spacing: -0.01em; }
+.lib-head .count { color: var(--muted); font-size: var(--fs-small); }
+.lib-list { list-style: none; margin: 0; padding: 0 0 12px; overflow-y: auto; flex: 1; }
+.lib-item {
+  position: relative; width: 100%; display: flex; align-items: center; gap: 12px;
+  height: 52px; padding: 0 20px; border: 0; background: transparent; text-align: left;
+  transition: background var(--dur) var(--ease);
+}
+.lib-item:hover { background: var(--hover); }
+.lib-item[aria-selected="true"] { background: var(--raised); }
+.lib-item[aria-selected="true"]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 1px; background: var(--accent); }
+.lib-item .nm { flex: 1; min-width: 0; font-weight: 500; }
+.lib-item .st { font-size: var(--fs-small); color: var(--muted); white-space: nowrap; }
+.lib-item .st.pos { color: var(--pill-positive-ink); }
+.lib-item .st.acc { color: var(--pill-accent-ink); }
+.lib-item .mini { position: absolute; left: 60px; right: 20px; bottom: 6px; height: 2px; background: var(--raised); border-radius: 2px; overflow: hidden; }
+.lib-item .mini span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+.lib-foot { padding: 16px 20px; border-top: 1px solid var(--border); font-size: var(--fs-small); color: var(--muted); }
+.lib-foot b { color: var(--text); font-weight: 500; }
+
+.detail { position: relative; min-height: 0; min-width: 0; overflow-y: auto; }
+.detail-inner { max-width: 1040px; padding: 32px var(--pad) 40px; }
+.d-head { display: flex; align-items: center; gap: 20px; }
+.d-title { flex: 1; min-width: 0; }
+.d-title h1 { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.d-title .sub { margin-top: 4px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.d-actions { display: flex; gap: 8px; align-items: center; }
+.d-actions .btn-lg { min-width: 136px; }
+.d-desc { margin: 20px 0 0; max-width: 64ch; color: var(--soft); font-size: 14px; }
+
+.strip { margin-top: 24px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--border); }
+.strip > div { padding: 16px 20px; }
+.strip > div + div { border-left: 1px solid var(--border); }
+.strip .k { color: var(--muted); font-size: var(--fs-small); }
+.strip .v { margin-top: 2px; font-size: var(--fs-section); font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip .v small { font-size: var(--fs-small); color: var(--muted); font-weight: 400; margin-left: 2px; }
+.strip .v.dash { color: var(--muted); }
+
+.progress-card { margin-top: 24px; padding: 16px 20px; background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--border); }
+.progress-card[hidden] { display: none; }
+.pc-top { display: flex; align-items: baseline; gap: 12px; }
+.pc-top .what { font-weight: 500; }
+.pc-top .pct { margin-left: auto; font-size: var(--fs-section); font-weight: 500; }
+.pbar { margin-top: 12px; height: 4px; border-radius: 2px; background: var(--raised); overflow: hidden; }
+.pbar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 200ms linear; }
+.pc-meta { margin-top: 10px; display: flex; gap: 20px; color: var(--muted); font-size: var(--fs-small); flex-wrap: wrap; }
+.pc-meta b { color: var(--soft); font-weight: 500; }
+.pc-meta .btn { margin-left: auto; height: 26px; padding: 0 10px; font-size: var(--fs-small); }
+
+.tabs { margin-top: 32px; display: flex; gap: 24px; border-bottom: 1px solid var(--border); }
+.tabbtn { position: relative; height: 36px; padding: 0; border: 0; background: transparent; color: var(--muted); font-weight: 500; transition: color var(--dur) var(--ease); }
+.tabbtn:hover { color: var(--text); }
+.tabbtn[aria-selected="true"] { color: var(--text); }
+.tabbtn[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--accent); }
+.tabbtn .n { color: var(--muted); font-weight: 400; margin-left: 4px; }
+.tabpanel { padding-top: 20px; }
+.tabpanel[hidden] { display: none; }
+
+.kv { margin: 0; display: grid; grid-template-columns: 180px minmax(0, 1fr); background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--border); }
+.kv dt, .kv dd { margin: 0; min-height: var(--row-height); display: flex; align-items: center; padding: 0 20px; border-top: 1px solid var(--border); }
+.kv dt:first-of-type, .kv dt:first-of-type + dd { border-top: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { gap: 12px; min-width: 0; }
+.kv .path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--soft); }
+.kv .btn { height: 26px; padding: 0 10px; font-size: var(--fs-small); }
+
+.console {
+  margin: 0; padding: 14px 0; max-height: 360px; min-height: 160px; overflow-y: auto;
+  background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--border);
+  font: 400 12px/1.75 var(--mono);
+}
+.ln { display: grid; grid-template-columns: 76px 52px minmax(0, 1fr); gap: 0 12px; padding: 0 20px; }
+.ln .t { color: #7d7f87; }
+.ln .lv { color: var(--muted); }
+.ln .m { color: var(--soft); white-space: pre-wrap; word-break: break-word; }
+.ln.ok .lv, .ln.ok .m { color: var(--pill-positive-ink); }
+.ln.warn .lv { color: var(--warning); }
+.ln.error .lv, .ln.error .m { color: var(--negative); }
+.ln.fresh { animation: lnIn 260ms var(--ease); }
+@keyframes lnIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.console .empty { padding: 0 20px; color: var(--muted); font-family: var(--font); font-size: var(--fs-body); }
+
+/* Welcome / brand panel */
+.welcome { height: 100%; display: grid; place-items: center; padding: var(--pad); }
+.brand-panel {
+  position: relative; width: min(720px, 100%); padding: 16px 16px 40px;
+  border-radius: 14px; background: var(--surface); border: 1px solid var(--border); overflow: hidden;
+}
+.stage { position: relative; padding: 64px 32px; border-radius: 10px; overflow: hidden; container-type: inline-size; isolation: isolate; }
+
+/* Animated gradient: a slowly turning ocean field with four lights drifting over it (transform only) */
+.aurora { position: absolute; inset: 0; z-index: -1; overflow: hidden; background: #020a1c; }
+.aurora::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 160%; aspect-ratio: 1; margin: -80% 0 0 -80%;
+  background: conic-gradient(from 0deg, #021437, #0757a8 18%, #1f6dff 32%, #03235c 48%, #0a84d6 64%, #01133a 80%, #021437);
+  filter: blur(70px); opacity: .9; animation: turn 22s linear infinite; will-change: transform;
+}
+.aurora i { position: absolute; border-radius: 50%; filter: blur(56px); will-change: transform; mix-blend-mode: screen; }
+.aurora i:nth-child(1) { width: 62%; aspect-ratio: 1; left: -12%; top: -30%; background: #0a3a8f; animation: driftA 9s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
+.aurora i:nth-child(2) { width: 55%; aspect-ratio: 1; right: -10%; bottom: -40%; background: #0077c8; animation: driftB 11s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
+.aurora i:nth-child(3) { width: 38%; aspect-ratio: 1; left: 34%; top: 18%; background: #2f74ff; opacity: .8; animation: driftC 7s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
+.aurora i:nth-child(4) { width: 24%; aspect-ratio: 1; left: 12%; bottom: -8%; background: #19b2ff; opacity: .55; animation: driftD 8.5s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
+.aurora::after { content: ""; position: absolute; inset: 0; background: rgba(2, 8, 24, .22); }
+@keyframes turn { to { transform: rotate(360deg); } }
+@keyframes driftA { from { transform: translate(0, 0) scale(1); } to { transform: translate(55%, 45%) scale(1.3); } }
+@keyframes driftB { from { transform: translate(0, 0) scale(1.15); } to { transform: translate(-60%, -50%) scale(.85); } }
+@keyframes driftC { from { transform: translate(-70%, 35%) scale(.8); } to { transform: translate(60%, -40%) scale(1.25); } }
+@keyframes driftD { from { transform: translate(0, 0); } to { transform: translate(220%, -160%); } }
+
+/* ASCII wordmark: 68 columns of JetBrains Mono, sized to the stage width */
+.ascii { margin: 0 auto; width: max-content; max-width: 100%; font: 500 min(14px, calc(100cqw / 42)) / 1.04 var(--mono); color: #fff; letter-spacing: 0; white-space: pre; filter: drop-shadow(0 6px 24px rgba(0, 30, 80, .55)); }
+.ascii span {
+  display: block; color: transparent;
+  background: linear-gradient(100deg, #ffffff 0 42%, #a9dcff 50%, #ffffff 58% 100%) 0 0 / 300% 100% repeat-x;
+  -webkit-background-clip: text; background-clip: text;
+  animation: rowIn 1100ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms) both, sheen 5.5s cubic-bezier(.65, 0, .35, 1) calc(var(--d, 0ms) + 1300ms) infinite;
+}
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(14px) scaleY(1.15); filter: blur(8px); }
+  55% { opacity: 1; filter: blur(1px); }
+}
+@keyframes sheen { 0% { background-position: 0 0; } 45%, 100% { background-position: -150% 0; } }
+.titlebar .name, .lic-btn { white-space: nowrap; }
+.brand-panel p { margin: 28px auto 0; max-width: 46ch; text-align: center; color: var(--soft); font-size: 14px; }
+.brand-panel .row { justify-content: center; margin-top: 24px; }
+.brand-panel h1 { margin: 0; }
+
+/* ================= Logs ================= */
+.page { height: 100%; display: flex; flex-direction: column; min-height: 0; padding: 32px var(--pad) 24px; }
+.page-head { display: flex; align-items: flex-end; gap: 16px; }
+.page-head h1 { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.page-head .sub { color: var(--muted); margin-top: 4px; }
+.page-head .grow { flex: 1; }
+.filters { margin-top: 24px; display: flex; gap: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.logwrap { flex: 1; min-height: 0; margin-top: 16px; overflow: auto; background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--border); }
+.logtable { width: 100%; border-collapse: collapse; font: 400 12px/1.5 var(--mono); }
+.logtable th { position: sticky; top: 0; background: var(--surface); text-align: left; font: 500 12px var(--font); color: var(--muted); padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.logtable td { padding: 7px 16px; border-bottom: 1px solid var(--rule); vertical-align: top; color: var(--soft); }
+.logtable td.t { color: #7d7f87; white-space: nowrap; }
+.logtable td.p { color: var(--text); white-space: nowrap; font-family: var(--font); font-weight: 500; }
+.logtable tr.ok td.l, .logtable tr.ok td.m { color: var(--pill-positive-ink); }
+.logtable tr.warn td.l { color: var(--warning); }
+.logtable tr.error td.l, .logtable tr.error td.m { color: var(--negative); }
+.logempty { padding: 48px 24px; text-align: center; color: var(--muted); }
+
+/* ================= Settings ================= */
+.settings { max-width: 1152px; margin: 0 auto; padding: 32px var(--pad) 48px; }
+.settings > h1 { margin: 0 0 8px; font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.02em; }
+.set-sec { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: var(--gap); padding: 32px 0; border-top: 1px solid var(--border); }
+.set-sec:first-of-type { border-top: 0; }
+.set-sec h2 { margin: 6px 0 4px; font-size: var(--fs-card); font-weight: 500; }
+.set-sec .desc { margin: 0; color: var(--muted); font-size: 14px; max-width: 40ch; }
+.set-panel { background: var(--surface); border-radius: var(--radius-card); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.sw-row { display: flex; align-items: flex-start; gap: 16px; }
+.sw-row + .sw-row { padding-top: 16px; border-top: 1px solid var(--border); }
+.sw-row .tx { flex: 1; }
+.sw-row .t { font-size: 14px; font-weight: 500; }
+.sw-row .d { color: var(--muted); font-size: var(--fs-small); margin-top: 2px; }
+.sw-row .switch { margin-top: 3px; }
+.conn-line { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: var(--muted); }
+.conn-line.ok { color: var(--pill-positive-ink); }
+.conn-line.err { color: var(--negative); }
+
+/* ================= Overlays ================= */
+.overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(6, 6, 8, .7); animation: fade 160ms var(--ease); }
+.overlay[hidden] { display: none; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.dialog { width: 100%; max-width: 460px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 24px 64px rgba(0, 0, 0, .55); animation: pop 200ms var(--ease); overflow: hidden; }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
+.dialog-body { padding: 24px; }
+.dialog-body h2 { margin: 0 0 6px; font-size: var(--fs-section); font-weight: 600; letter-spacing: -0.015em; }
+.dialog-body > p { margin: 0; color: var(--soft); }
+.dialog-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--border); }
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-wrap .input { padding-right: 44px; }
+.input-wrap .paste { position: absolute; right: 4px; width: 32px; height: 32px; padding: 0; border: 0; border-radius: var(--radius-chip); background: transparent; color: var(--muted); display: grid; place-items: center; }
+.input-wrap .paste:hover { background: var(--raised); color: var(--text); }
+
+.keys { margin: 20px 0 0; padding: 0; list-style: none; background: var(--ground); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.keys li { padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+.keys li + li { border-top: 1px solid var(--border); }
+.keys .k { display: flex; justify-content: space-between; gap: 12px; }
+.keys .apps { color: var(--muted); font-size: var(--fs-small); }
+
+.act-steps { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.act-steps li { display: flex; align-items: center; gap: 10px; color: var(--muted); transition: color var(--dur); }
+.act-steps li.active, .act-steps li.done { color: var(--text); }
+.act-steps .ic { width: 14px; height: 14px; display: grid; place-items: center; }
+.act-steps .ic::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--control); }
+.act-steps li.active .ic::before { width: 11px; height: 11px; background: transparent; border: 1.5px solid var(--accent); border-right-color: transparent; animation: spin 700ms linear infinite; }
+.act-steps li.done .ic::before { display: none; }
+.act-steps .ic svg { display: none; color: var(--positive); }
+.act-steps li.done .ic svg { display: block; }
+
+.unlocked { list-style: none; margin: 20px 0 0; padding: 0; background: var(--ground); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.unlocked li { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 52px; animation: rowIn 320ms var(--ease) both; }
+.unlocked li + li { border-top: 1px solid var(--border); }
+.unlocked .nm { flex: 1; font-weight: 500; }
+@keyframes rowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+
+.folder-list { list-style: none; margin: 16px 0 0; padding: 4px; background: var(--ground); border-radius: var(--radius-card); max-height: 240px; overflow-y: auto; }
+.folder-list button { width: 100%; display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: transparent; color: var(--soft); text-align: left; font: 400 12px var(--mono); }
+.folder-list button:hover { background: var(--raised); color: var(--text); }
+.folder-list button[aria-selected="true"] { background: var(--raised); color: var(--text); box-shadow: inset 1px 0 0 var(--accent); }
+
+/* Launch sequence */
+.launch { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; background: var(--ground); opacity: 0; pointer-events: none; transition: opacity 240ms var(--ease); }
+.launch.open { opacity: 1; pointer-events: auto; }
+.launch-inner { position: relative; width: 340px; display: flex; flex-direction: column; align-items: center; text-align: center; transform: scale(.98); transition: transform 360ms var(--ease); }
+.launch.open .launch-inner { transform: none; }
+.ring { position: relative; width: 120px; height: 120px; margin-bottom: 28px; }
+.ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.ring .track { stroke: var(--raised); }
+.ring .bar { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 520ms var(--ease), stroke 300ms; }
+.launch.done .ring .bar { stroke: var(--positive); }
+.ring .orbit { position: absolute; inset: 0; animation: spin 1.6s linear infinite; }
+.ring .orbit::before { content: ""; position: absolute; top: 2px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #fff; }
+.launch.done .ring .orbit { opacity: 0; transition: opacity 200ms; }
+.ring .mark { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 10px; font-size: 18px; color: #fff; background: var(--raised); }
+.ring .check { position: absolute; right: 10px; bottom: 10px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--positive); color: #0b1712; border: 3px solid var(--ground); opacity: 0; transform: scale(.6); transition: transform 280ms cubic-bezier(.3, 1.5, .5, 1), opacity 160ms; }
+.launch.done .ring .check { opacity: 1; transform: scale(1); }
+.launch h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; letter-spacing: -0.015em; }
+.launch .step { margin-top: 4px; height: 20px; color: var(--muted); }
+.launch .lsteps { list-style: none; margin: 24px 0 0; padding: 16px 0 0; width: 100%; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.lsteps li { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; font-size: var(--fs-small); color: #7d7f87; transition: color var(--dur); }
+.lsteps li.active { color: var(--text); }
+.lsteps li.done { color: var(--soft); }
+.lsteps .ic { width: 14px; height: 14px; display: grid; place-items: center; }
+.lsteps .ic::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--control); }
+.lsteps li.active .ic::before { width: 10px; height: 10px; background: transparent; border: 1.5px solid var(--accent); border-right-color: transparent; animation: spin 700ms linear infinite; }
+.lsteps li.done .ic::before { display: none; }
+.lsteps .ic svg { display: none; color: var(--positive); }
+.lsteps li.done .ic svg { display: block; }
+.lsteps .ms { font: 400 11px var(--mono); color: #7d7f87; }
+.launch .cancel { margin-top: 24px; }
+
+/* Boot splash */
+.splash { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: #070b14; transition: opacity 360ms var(--ease); isolation: isolate; container-type: inline-size; }
+.splash { transition: opacity 600ms cubic-bezier(.65, 0, .35, 1); }
+.splash.gone { opacity: 0; pointer-events: none; }
+.splash .splash-inner { transition: transform 700ms cubic-bezier(.65, 0, .35, 1), filter 700ms cubic-bezier(.65, 0, .35, 1); }
+.splash.gone .splash-inner { transform: scale(1.06); filter: blur(6px); }
+.splash-inner { position: relative; width: min(860px, 88vw); display: flex; flex-direction: column; align-items: center; gap: 28px; }
+.splash .boot { display: flex; align-items: center; gap: 10px; color: rgba(255, 255, 255, .82); font-size: var(--fs-small); opacity: 0; animation: bootIn 700ms cubic-bezier(.16, 1, .3, 1) 750ms forwards; }
+@keyframes bootIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.splash .ascii { font-size: min(16px, calc(88cqw / 42)); }
+
+
+.toasts { position: fixed; right: 16px; bottom: 40px; z-index: 60; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { pointer-events: auto; min-width: 260px; max-width: 360px; display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: var(--radius-card); background: var(--raised); box-shadow: var(--shadow); animation: tIn 200ms var(--ease); transition: opacity 180ms, transform 180ms; }
+.toast.leaving { opacity: 0; transform: translateY(4px); }
+@keyframes tIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.toast .grow { flex: 1; min-width: 0; }
+.toast .s { color: var(--muted); font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.closed { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; background: var(--ground); color: var(--muted); text-align: center; }
+.closed[hidden] { display: none; }
+.closed p { margin: 0 0 16px; }
+
+/* ================= Narrow ================= */
+@media (max-width: 1100px) { .strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } .strip > div:nth-child(4) { border-left: 0; } .strip > div:nth-child(n+4) { border-top: 1px solid var(--border); } }
+@media (max-width: 900px) { .set-sec { grid-template-columns: 1fr; gap: 16px; } }
+@media (max-width: 760px) {
+  .window { grid-template-columns: 1fr; grid-template-rows: 40px 1fr 56px; grid-template-areas: "title" "main" "rail"; }
+  .statusbar { display: none; }
+  .rail { flex-direction: row; padding: 0; border-right: 0; border-top: 1px solid var(--border); }
+  .rail .push, .rail .brandmark { display: none; }
+  .rail-btn { flex: 1; height: 100%; }
+  .rail-btn[aria-current="page"]::after { left: 30%; right: 30%; top: -1px; bottom: auto; width: auto; height: 1px; }
+  .tip[data-tip]:hover::before { display: none; }
+  .library { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .lib-side { border-right: 0; border-bottom: 1px solid var(--border); max-height: 40vh; }
+  .lib-foot { display: none; }
+  .detail-inner, .page, .settings { padding: 20px 16px 32px; }
+  .d-head { flex-wrap: wrap; }
+  .d-actions { width: 100%; } .d-actions .btn-lg { flex: 1; }
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .strip > div { border-left: 0 !important; border-top: 1px solid var(--border); }
+  .strip > div:nth-child(-n+2) { border-top: 0; }
+  .strip > div:nth-child(even) { border-left: 1px solid var(--border) !important; }
+  .kv { grid-template-columns: 120px minmax(0, 1fr); }
+  .titlebar .crumb, .titlebar .sep { display: none; }
+  .winctl button { width: 36px; }
+  .toasts { bottom: 68px; }
+  .brand-panel { padding: 12px 12px 28px; } .stage { padding: 36px 16px; } .titlebar .name { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  .ring .orbit { display: none; }
+  .aurora i, .aurora::before { animation: none !important; }
+  .ascii span { clip-path: none; opacity: 1; transform: none; filter: none; }
+}
+</style>
+</head>
+<body>
+
+
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="splash-inner">
+    <pre class="ascii" id="splashAscii" role="img" aria-label="Trade Bay"></pre>
+    <div class="boot"><span class="spinner" aria-hidden="true"></span><span id="bootText">Launching TradeBay</span></div>
+  </div>
+</div>
+
+<div class="window" id="window">
+  <header class="titlebar">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x=".75" y=".75" width="18.5" height="18.5" rx="4" stroke="#3a3a3e" stroke-width="1.5"/><path d="M5 13.5v-3M8.33 13.5v-6M11.67 13.5V9M15 13.5v-8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span class="name">Trade Bay</span>
+    <span class="crumb sep" aria-hidden="true">/</span>
+    <span class="crumb" id="crumb">Library</span>
+    <div class="fill"></div>
+    <button class="lic-btn unlicensed" id="licBtn">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="10.5" r="3"/><path d="M7.6 8.4L13.5 2.5M11.5 4.5l1.5 1.5"/></svg>
+      <span id="licBtnText">Activate license</span>
+    </button>
+    <div class="winctl">
+      <button id="winMin" aria-label="Minimise" title="Minimise"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor"/></svg></button>
+      <button id="winMax" aria-label="Maximise" title="Maximise"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="9" height="9" stroke="currentColor"/></svg></button>
+      <button id="winClose" class="close" aria-label="Close" title="Close"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <nav class="rail" aria-label="Sections">
+    <button class="rail-btn tip" data-view="library" data-tip="Library" aria-label="Library" aria-current="page">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="5" height="5" rx="1"/><rect x="10.5" y="2.5" width="5" height="5" rx="1"/><rect x="2.5" y="10.5" width="5" height="5" rx="1"/><rect x="10.5" y="10.5" width="5" height="5" rx="1"/></svg>
+    </button>
+    <button class="rail-btn tip" data-view="logs" data-tip="Logs" aria-label="Logs">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 4.5h1.5M7 4.5h8M3 9h1.5M7 9h8M3 13.5h1.5M7 13.5h5"/></svg>
+      <span class="badge" id="logBadge" hidden></span>
+    </button>
+    <div class="push"></div>
+    <button class="rail-btn tip" data-view="settings" data-tip="Settings" aria-label="Settings">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 5h7M13.5 5H15M3 13h1.5M8 13h7"/><circle cx="11.75" cy="5" r="1.75"/><circle cx="6.25" cy="13" r="1.75"/></svg>
+    </button>
+  </nav>
+
+  <main class="main" id="main">
+    <!-- Library -->
+    <section class="view" id="view-library">
+      <div class="library">
+        <aside class="lib-side">
+          <div class="lib-head"><h2>Platforms</h2><span class="count" id="libCount"></span></div>
+          <ul class="lib-list" id="libList" role="listbox" aria-label="Platforms"></ul>
+          <div class="lib-foot" id="libFoot"></div>
+        </aside>
+        <div class="detail" id="detail"></div>
+      </div>
+    </section>
+
+    <!-- Logs -->
+    <section class="view" id="view-logs" hidden>
+      <div class="page">
+        <div class="page-head">
+          <div><h1>Logs</h1><div class="sub">Downloads, installs and launches from the license server.</div></div>
+          <div class="grow"></div>
+          <button class="btn" id="copyLogs">Copy logs</button>
+          <button class="btn btn-ghost" id="clearLogs">Clear logs</button>
+        </div>
+        <div class="filters" id="logFilters" role="tablist" aria-label="Filter logs"></div>
+        <div class="logwrap" id="logWrap"></div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="view" id="view-settings" hidden>
+      <div style="height:100%;overflow-y:auto">
+        <div class="settings">
+          <h1>Settings</h1>
+          <div class="set-sec">
+            <div>
+              <h2>License server</h2>
+              <p class="desc">Trade Bay checks your license and downloads platforms from this address.</p>
+            </div>
+            <div class="set-panel">
+              <div class="field">
+                <label class="label" for="serverAddr">Server address</label>
+                <div class="row">
+                  <input class="input mono grow" id="serverAddr" type="text" placeholder="https://license.tradebay.io" autocomplete="off" spellcheck="false" aria-describedby="serverError serverStatus">
+                  <button class="btn btn-primary" id="saveServer" style="height:40px" disabled>Save address</button>
+                </div>
+                <span class="error" id="serverError" hidden role="alert"></span>
+                <span class="conn-line" id="serverStatus" role="status"></span>
+              </div>
+            </div>
+          </div>
+          <div class="set-sec">
+            <div>
+              <h2>General</h2>
+              <p class="desc">How Trade Bay behaves on this computer. Changes save as you make them.</p>
+            </div>
+            <div class="set-panel">
+              <div class="sw-row"><div class="tx"><div class="t" id="lbl-startup">Launch Trade Bay on startup</div><div class="d">Open the launcher when you sign in to Windows.</div></div><button class="switch" role="switch" id="startup" aria-labelledby="lbl-startup" aria-checked="false"></button></div>
+              <div class="sw-row"><div class="tx"><div class="t" id="lbl-updates">Check for platform updates automatically</div><div class="d">Ask the server for newer builds before each launch.</div></div><button class="switch" role="switch" id="updates" aria-labelledby="lbl-updates" aria-checked="true"></button></div>
+              <div class="sw-row"><div class="tx"><div class="t" id="lbl-tray">Minimise to tray after launching a platform</div><div class="d">Keeps the launcher out of the way while you trade.</div></div><button class="switch" role="switch" id="tray" aria-labelledby="lbl-tray" aria-checked="false"></button></div>
+            </div>
+          </div>
+          <div class="set-sec">
+            <div>
+              <h2>Install location</h2>
+              <p class="desc">New platforms install into a folder here. Change one platform's folder from its page in Library.</p>
+            </div>
+            <div class="set-panel">
+              <div class="field">
+                <label class="label" for="installDir">Default install directory</label>
+                <div class="row">
+                  <input class="input mono grow" id="installDir" type="text" spellcheck="false" placeholder="C:\Trading">
+                  <button class="btn" style="height:40px" data-browse="default">Browse</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Launch sequence -->
+    <div class="launch" id="launch" role="dialog" aria-modal="true" aria-labelledby="launchTitle" aria-hidden="true">
+      <div class="launch-inner">
+        <div class="ring">
+          <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+            <circle class="track" cx="60" cy="60" r="56" stroke-width="2"/>
+            <circle class="bar" id="ringBar" cx="60" cy="60" r="56" stroke-width="2" stroke-dasharray="351.86" stroke-dashoffset="351.86"/>
+          </svg>
+          <div class="orbit"></div>
+          <div class="mark" id="launchMark">SC</div>
+          <div class="check"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg></div>
+        </div>
+        <h2 id="launchTitle">Starting</h2>
+        <div class="step" id="launchStep" aria-live="polite"></div>
+        <ul class="lsteps" id="launchSteps"></ul>
+        <button class="btn btn-ghost cancel" id="cancelLaunch">Cancel launch</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <span class="item"><span class="dot" id="sbDot"></span><span id="sbConn">Connecting…</span></span>
+    <span class="item mono" id="sbHost"></span>
+    <span class="grow"></span>
+    <span class="item" id="sbTask"></span>
+    <span class="item" id="sbRunning"></span>
+    <span class="item mono">v1.0.0</span>
+  </footer>
+</div>
+
+<!-- Activate license -->
+<div class="overlay" id="actDialog" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="actTitle">
+    <div id="actBody"></div>
+  </div>
+</div>
+
+<!-- Folder picker -->
+<div class="overlay" id="folderDialog" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="fdTitle" aria-describedby="fdDesc">
+    <div class="dialog-body">
+      <h2 id="fdTitle">Choose folder</h2>
+      <p id="fdDesc"></p>
+      <ul class="folder-list" id="folderList" role="listbox" aria-labelledby="fdTitle"></ul>
+    </div>
+    <div class="dialog-foot"><button class="btn" data-close>Cancel</button><button class="btn btn-primary" id="confirmFolder">Select folder</button></div>
+  </div>
+</div>
+
+<!-- Confirm (uninstall / quit) -->
+<div class="overlay" id="confirmDialog" hidden>
+  <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfDesc">
+    <div class="dialog-body"><h2 id="cfTitle"></h2><p id="cfDesc"></p></div>
+    <div class="dialog-foot"><button class="btn" data-close id="cfCancel"></button><button class="btn" id="cfOk"></button></div>
+  </div>
+</div>
+
+<div class="closed" id="closed" hidden><div><p>Trade Bay is closed.</p><button class="btn" id="reopen">Reopen Trade Bay</button></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="appVer" aria-hidden="true" style="position:fixed;right:14px;bottom:12px;z-index:60;pointer-events:none;font:600 11px/1 Segoe UI,system-ui,sans-serif;letter-spacing:.4px;color:#6f6f76;opacity:.85;text-shadow:0 1px 2px rgba(0,0,0,.5);"></div>
+
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Native bridge (WebView2 host process) ----------
+  window.__cbs = {};
+  window.__on = (t, f) => { window.__cbs[t] = f; };
+  window.__post = (m) => window.chrome.webview.postMessage(m);
+  try { window.chrome.webview.addEventListener('message', (e) => { const f = window.__cbs[e.data && e.data.t]; if (f) f(e.data); }); } catch (_) {}
+
+  // ---------- Catalogue (served by the license server) ----------
+  // Catalogue arrives from the native launcher (server /v1/packages) via __on('init').
+  let PLATFORMS = [];
+  const byId = (id) => PLATFORMS.find(p => p.id === id);
+
+  // ---------- Storage: the native launcher persists state (no localStorage) ----------
+  let mem = null;
+  const load = () => mem || null;
+  let saveTimer = null;
+  function persist(now) {
+    const write = () => {
+      const data = { licenses: state.licenses, installed: state.installed, dirs: state.dirs, settings: state.settings,
+        lastLaunch: state.lastLaunch, launches: state.launches, logs: state.logs.slice(-500) };
+      mem = data;
+      __post({ t: 'save', data });
+    };
+    clearTimeout(saveTimer);
+    if (now) write(); else saveTimer = setTimeout(write, 250);
+  }
+
+  const saved = load() || { licenses: [], installed: {}, dirs: {}, settings: {}, lastLaunch: {}, launches: {}, logs: [] };
+  const state = {
+    licenses: saved.licenses || [],
+    installed: saved.installed || {},
+    dirs: saved.dirs || {},
+    settings: Object.assign({ server: '', startup: false, updates: true, tray: false, installDir: 'C:\\Trading' }, saved.settings || {}),
+    lastLaunch: saved.lastLaunch || {},
+    launches: saved.launches || {},
+    logs: saved.logs || [],
+    view: 'library',
+    selected: null,
+    tab: 'overview',
+    logFilter: 'all',
+    queue: [],
+    job: null,
+    running: new Map(),
+    connected: null,
+    latency: null,
+    unseenLogs: false
+  };
+
+  // ---------- Helpers ----------
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  const pad = (n) => String(n).padStart(2, '0');
+  const clock = (t) => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+  const fmtDate = (t) => new Date(t).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const size = (mb) => mb >= 1000 ? `${(mb / 1024).toFixed(2)} GB` : `${mb.toFixed(1)} MB`;
+  const sizeParts = (mb) => mb >= 1000 ? [(mb / 1024).toFixed(2), 'GB'] : [mb.toFixed(1), 'MB'];
+  const when = (t) => {
+    const s = (Date.now() - t) / 1000;
+    if (s < 60) return 'just now';
+    if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+    if (new Date(t).toDateString() === new Date().toDateString()) return `today ${clock(t).slice(0, 5)}`;
+    return fmtDate(t);
+  };
+  const maskKey = (k) => `${k.slice(0, 5)}-•••••-•••••-${k.slice(-5)}`;
+  const ICON = {
+    ok: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>',
+    err: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11h.01"/></svg>',
+    play: '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.5 2.8v10.4a.7.7 0 001.06.6l8.3-5.2a.7.7 0 000-1.2L5.56 2.2a.7.7 0 00-1.06.6z"/></svg>',
+    down: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v8M4.5 7L8 10.5 11.5 7M3 13.5h10"/></svg>',
+    stop: '<svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>',
+    key: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="10.5" r="3"/><path d="M7.6 8.4L13.5 2.5M11.5 4.5l1.5 1.5"/></svg>',
+    paste: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3" width="9" height="11" rx="1.5"/><path d="M6 3V2h4v1"/></svg>',
+    folder: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.5A1.5 1.5 0 013.5 3h2.8l1.4 1.5h4.8A1.5 1.5 0 0114 6v5.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 11.5z"/></svg>'
+  };
+  const GLYPHS = {
+    T: ['████████╗', '╚══██╔══╝', '   ██║   ', '   ██║   ', '   ██║   ', '   ╚═╝   '],
+    R: ['██████╗ ', '██╔══██╗', '██████╔╝', '██╔══██╗', '██║  ██║', '╚═╝  ╚═╝'],
+    A: [' █████╗ ', '██╔══██╗', '███████║', '██╔══██║', '██║  ██║', '╚═╝  ╚═╝'],
+    D: ['██████╗ ', '██╔══██╗', '██║  ██║', '██║  ██║', '██████╔╝', '╚═════╝ '],
+    E: ['███████╗', '██╔════╝', '█████╗  ', '██╔══╝  ', '███████╗', '╚══════╝'],
+    B: ['██████╗ ', '██╔══██╗', '██████╔╝', '██╔══██╗', '██████╔╝', '╚═════╝ '],
+    Y: ['██╗   ██╗', '╚██╗ ██╔╝', ' ╚████╔╝ ', '  ╚██╔╝  ', '   ██║   ', '   ╚═╝   '],
+    ' ': ['  ', '  ', '  ', '  ', '  ', '  ']
+  };
+  const asciiRows = (word) => [0, 1, 2, 3, 4, 5].map(r => [...word].map(c => GLYPHS[c][r]).join(''));
+  const asciiHtml = (delay = 0) => asciiRows('TRADE BAY').map((row, i) => `<span style="--d:${delay + i * 85}ms">${esc(row)}</span>`).join('');
+  const WORDMARK = () => `<pre class="ascii" role="img" aria-label="Trade Bay">${asciiHtml(120)}</pre>`;
+  const AURORA = '<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i></div>';
+
+  function toast(title, { sub = '', tone = 'pos' } = {}) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<span class="dot ${tone}"></span><div class="grow"><div>${esc(title)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
+    $('#toasts').appendChild(el);
+    setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 200); }, 3200);
+  }
+
+  // ---------- Server ----------
+  function parseHost(v) {
+    v = (v || '').trim();
+    if (!v) return null;
+    try {
+      const u = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(v) ? v : `https://${v}`);
+      if (!/^https?:$/.test(u.protocol)) return null;
+      const h = u.hostname;
+      const ip = /^\d{1,3}(\.\d{1,3}){3}$/.test(h);
+      const nm = /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i.test(h);
+      if (!ip && !(nm && (h.includes('.') || h === 'localhost'))) return null;
+      return h.toLowerCase() + (u.port ? `:${u.port}` : '');
+    } catch (_) { return null; }
+  }
+  const serverUrl = () => { const v = state.settings.server.trim(); return /^[a-z]+:\/\//i.test(v) ? v.replace(/\/+$/, '') : `https://${v}`; };
+  // Entitlement is decided by the server: each license key carries a product scope.
+  const reachable = () => state.connected === true;
+  function entitlements(key) {
+    return (state.licenses.find(l => l.key === key) || { products: [] }).products;
+  }
+
+  function renderConn() {
+    const host = parseHost(state.settings.server) || state.settings.server;
+    $('#sbHost').textContent = host;
+    const dot = $('#sbDot'), t = $('#sbConn'), line = $('#serverStatus');
+    if (state.connected === true) { dot.className = 'dot pos'; t.textContent = `Connected · ${state.latency} ms`; line.className = 'conn-line ok'; line.innerHTML = `${ICON.ok}Connected to ${esc(host)} in ${state.latency} ms`; }
+    else if (state.connected === false) { dot.className = 'dot neg'; t.textContent = 'License server unreachable'; line.className = 'conn-line err'; line.innerHTML = `${ICON.err}${esc(host)} did not answer. Check the address and save again.`; }
+    else { dot.className = 'dot warn'; t.textContent = 'Connecting…'; line.className = 'conn-line'; line.innerHTML = `<span class="spinner" aria-hidden="true"></span>Connecting to ${esc(host)}…`; }
+  }
+  let probeSeq = 0;
+  function probe() {
+    const id = ++probeSeq;
+    state.connected = null; renderConn();
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(false), 12000);
+      __on('probe', (m) => {
+        if ((m.seq || 0) !== id) return;
+        clearTimeout(timer);
+        state.connected = !!m.ok;
+        state.latency = m.ok ? (m.latency || null) : null;
+        renderConn();
+        resolve(!!m.ok);
+      });
+      __post({ t: 'probe', seq: id });
+    });
+  }
+
+  // ---------- Logs ----------
+  function log(pid, lvl, msg) {
+    const e = { t: Date.now(), pid, lvl, msg };
+    state.logs.push(e);
+    if (state.logs.length > 800) state.logs.splice(0, state.logs.length - 800);
+    persist();
+    if (state.view === 'logs') appendLogRow(e); else { state.unseenLogs = true; $('#logBadge').hidden = false; }
+    const con = $('#console');
+    if (con && state.selected === pid && state.tab === 'log') {
+      $('.empty', con)?.remove();
+      con.insertAdjacentHTML('beforeend', lineHtml(e, true));
+      con.scrollTop = con.scrollHeight;
+      const n = $('#logCount'); if (n) n.textContent = state.logs.filter(x => x.pid === pid).length;
+    }
+  }
+  const LV = { info: 'INFO', ok: 'DONE', warn: 'WARN', error: 'ERROR' };
+  const lineHtml = (e, fresh) => `<div class="ln ${e.lvl}${fresh ? ' fresh' : ''}"><span class="t">${clock(e.t)}</span><span class="lv">${LV[e.lvl]}</span><span class="m">${esc(e.msg)}</span></div>`;
+
+  function renderLogFilters() {
+    const opts = [['all', 'All'], ...PLATFORMS.map(p => [p.id, p.name]), ['license', 'License']];
+    $('#logFilters').innerHTML = opts.map(([id, label]) => `<button class="tabbtn" role="tab" data-filter="${id}" aria-selected="${state.logFilter === id}">${esc(label)}</button>`).join('');
+  }
+  const logMatches = (e) => state.logFilter === 'all' || (state.logFilter === 'license' ? !e.pid : e.pid === state.logFilter);
+  const rowHtml = (e) => `<tr class="${e.lvl}"><td class="t">${clock(e.t)}</td><td class="l">${LV[e.lvl]}</td><td class="p">${e.pid ? esc(byId(e.pid).name) : 'License'}</td><td class="m">${esc(e.msg)}</td></tr>`;
+  function renderLogs() {
+    const rows = state.logs.filter(logMatches);
+    const wrap = $('#logWrap');
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="logempty">${state.logs.length ? 'Nothing logged for this filter yet.' : 'No activity yet. Installs and launches are logged here as they happen.'}</div>`;
+    } else {
+      wrap.innerHTML = `<table class="logtable"><thead><tr><th style="width:96px">Time</th><th style="width:72px">Level</th><th style="width:130px">Source</th><th>Message</th></tr></thead><tbody id="logBody">${rows.map(rowHtml).join('')}</tbody></table>`;
+      wrap.scrollTop = wrap.scrollHeight;
+    }
+  }
+  function appendLogRow(e) {
+    if (!logMatches(e)) return;
+    const body = $('#logBody');
+    if (!body) { renderLogs(); return; }
+    const wrap = $('#logWrap');
+    const atBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 40;
+    body.insertAdjacentHTML('beforeend', rowHtml(e));
+    if (atBottom) wrap.scrollTop = wrap.scrollHeight;
+  }
+  $('#logFilters').addEventListener('click', (e) => { const b = e.target.closest('[data-filter]'); if (!b) return; state.logFilter = b.dataset.filter; renderLogFilters(); renderLogs(); });
+  $('#copyLogs').addEventListener('click', async () => {
+    const text = state.logs.filter(logMatches).map(e => `${clock(e.t)} ${LV[e.lvl].padEnd(5)} ${(e.pid ? byId(e.pid).name : 'License').padEnd(12)} ${e.msg}`).join('\n');
+    try { await navigator.clipboard.writeText(text); toast('Logs copied', { sub: `${state.logs.filter(logMatches).length} lines` }); }
+    catch (_) { toast('Copy was blocked by the browser', { tone: 'neg', sub: 'Select the rows and press Ctrl+C' }); }
+  });
+  $('#clearLogs').addEventListener('click', () => confirmAction({
+    title: 'Clear all logs?', desc: 'This removes the install and launch history shown here. Installed platforms are not affected.',
+    ok: 'Clear logs', cancel: 'Keep logs', danger: true,
+    run: () => { state.logs = []; persist(true); renderLogs(); toast('Logs cleared', { tone: 'warn' }); }
+  }));
+
+  // ---------- Platform state ----------
+  const known = (id) => !!byId(id);
+  const entitled = (id) => state.licenses.some(l => l.products.includes(id) && known(id));
+  const keyFor = (id) => state.licenses.find(l => l.products.includes(id) && known(id));
+  function stateOf(id) {
+    if (state.running.has(id)) return 'running';
+    if (launchCtx && launchCtx.id === id) return 'starting';
+    if (state.job && state.job.id === id) return 'installing';
+    if (state.queue.includes(id)) return 'queued';
+    if (state.installed[id]) {
+      const iv = state.installed[id].version, lv = byId(id).version;
+      if (iv && lv && cmpVer(lv, iv) > 0) return 'update';
+      return 'installed';
+    }
+    if (entitled(id)) return 'available';
+    return 'locked';
+  }
+  // Numeric dotted-version compare ("1.10.0" > "1.9.2"). Same semantics as the launcher core.
+  function cmpVer(a, b) {
+    const pa = String(a).split('.'), pb = String(b).split('.');
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const na = +pa[i] || 0, nb = +pb[i] || 0;
+      if (na !== nb) return na < nb ? -1 : 1;
+    }
+    return 0;
+  }
+  const STATUS = {
+    locked: ['Not licensed', ''], available: ['Not installed', ''], queued: ['Queued', 'acc'], installing: ['Installing', 'acc'],
+    update: ['Update available', 'acc'], installed: ['Ready', 'pos'], starting: ['Starting', 'acc'], running: ['Running', 'pos']
+  };
+  const platformDir = (p) => state.dirs[p.id] || `${state.settings.installDir.replace(/[\\/]+$/, '')}\\${p.folder}`;
+
+  // ---------- Library ----------
+  function renderList() {
+    $('#libList').innerHTML = PLATFORMS.map(p => {
+      const st = stateOf(p.id);
+      let label = STATUS[st][0];
+      if (st === 'installing' && state.job) label = `${Math.floor(state.job.pct * 100)}%`;
+      const sel = p.id === state.selected;
+      return `<li><button class="lib-item" role="option" data-id="${p.id}" aria-selected="${sel}" tabindex="${sel || (!state.selected && p === PLATFORMS[0]) ? 0 : -1}">
+        <span class="mark" aria-hidden="true">${p.mono}</span><span class="nm">${esc(p.name)}</span>
+        <span class="st ${STATUS[st][1]}" data-st="${p.id}">${label}</span>
+        ${st === 'installing' ? `<span class="mini"><span id="mini-${p.id}" style="width:${(state.job.pct * 100).toFixed(1)}%"></span></span>` : ''}
+      </button></li>`;
+    }).join('');
+    const lic = PLATFORMS.filter(p => entitled(p.id)).length;
+    const inst = PLATFORMS.filter(p => state.installed[p.id]).length;
+    $('#libCount').textContent = `${lic} of ${PLATFORMS.length} licensed`;
+    const used = PLATFORMS.filter(p => state.installed[p.id]).reduce((s, p) => s + p.size, 0);
+    $('#libFoot').innerHTML = inst ? `<b>${inst}</b> installed · <b>${size(used)}</b> on disk` : lic ? 'Nothing installed yet. Pick a platform to install it.' : 'Activate a license to unlock your platforms.';
+  }
+
+  function welcomeHtml() {
+    const lic = state.licenses.length > 0;
+    const firstUnlocked = PLATFORMS.find(p => entitled(p.id));
+    return `<div class="welcome"><div class="brand-panel">
+      <h1 class="sr-only">Trade Bay</h1><div class="stage">${AURORA}${WORDMARK()}</div>
+      <p>${lic ? 'Your platforms are unlocked. Pick one on the left to install or launch it.' : 'One launcher for Sierra Chart, ATAS, Bookmap, MotiveWave and ATAS X. Enter your license key and the platforms you bought unlock here.'}</p>
+      <div class="row">${firstUnlocked ? `<button class="btn btn-primary btn-lg" data-select-first>Open ${esc(firstUnlocked.name)}</button>` : lic ? '' : `<button class="btn btn-primary btn-lg" data-activate>${ICON.key}Activate license</button>`}</div>
+    </div></div>`;
+  }
+
+  function actionHtml(p, st) {
+    switch (st) {
+      case 'locked': return `<button class="btn btn-primary btn-lg" data-activate>${ICON.key}Activate license</button>`;
+      case 'available': return `<button class="btn btn-primary btn-lg" data-install="${p.id}">${ICON.down}Install</button>`;
+      case 'queued': return `<button class="btn btn-lg" disabled>Queued</button><button class="btn btn-ghost" data-dequeue="${p.id}">Remove from queue</button>`;
+      case 'installing': return `<button class="btn btn-lg" disabled><span class="spinner" aria-hidden="true"></span>Installing</button>`;
+      case 'update': return `<button class="btn btn-primary btn-lg" data-install="${p.id}">${ICON.down}Update to ${esc(p.version)}</button>`;
+      case 'installed': return `<button class="btn btn-primary btn-lg" data-launch="${p.id}">${ICON.play}Launch</button>`;
+      case 'starting': return `<button class="btn btn-lg" disabled><span class="spinner" aria-hidden="true"></span>Starting</button>`;
+      case 'running': return `<button class="btn btn-lg btn-run" disabled><span class="dot pos"></span>Running</button><button class="btn btn-lg" data-stop="${p.id}" aria-label="Stop ${esc(p.name)}" title="Stop ${esc(p.name)}" style="min-width:0;padding:0 14px">${ICON.stop}</button>`;
+    }
+  }
+
+  function renderDetail() {
+    const el = $('#detail');
+    if (!state.selected) {
+      const html = welcomeHtml();
+      if (el.dataset.welcome !== html) { el.innerHTML = html; el.dataset.welcome = html; }
+      return;
+    }
+    delete el.dataset.welcome;
+    const p = byId(state.selected), st = stateOf(p.id), inst = state.installed[p.id], lic = keyFor(p.id);
+    const nLogs = state.logs.filter(e => e.pid === p.id).length;
+    const sub = st === 'locked' ? 'Not included in your license' : inst ? `Version ${inst.version} · installed ${fmtDate(inst.at)}` : `Version ${p.version} available · ${size(p.size)} download`;
+    const [sz, unit] = sizeParts(p.size);
+    const stat = (k, v, dash) => `<div><div class="k">${k}</div><div class="v ${dash ? 'dash' : ''}">${v}</div></div>`;
+    el.innerHTML = `<div class="detail-inner">
+      <div class="d-head">
+        <span class="mark lg" aria-hidden="true">${p.mono}</span>
+        <div class="d-title"><h1>${esc(p.name)}</h1><div class="sub"><span class="pill ${STATUS[st][1]}">${STATUS[st][0]}</span><span>${sub}</span></div></div>
+        <div class="d-actions">${actionHtml(p, st)}</div>
+      </div>
+      <p class="d-desc">${esc(p.desc)}</p>
+      <div class="progress-card" id="progressCard" ${st === 'installing' ? '' : 'hidden'}>
+        <div class="pc-top"><span class="what" id="pcWhat">Preparing</span><span class="pct" id="pcPct">0%</span></div>
+        <div class="pbar"><span id="pcBar"></span></div>
+        <div class="pc-meta"><span>Downloaded <b id="pcDone">0.0 MB</b> of <b>${size(p.size)}</b></span><span>Speed <b id="pcSpeed">—</b></span><span>Time left <b id="pcEta">—</b></span><button class="btn" id="cancelInstall">Cancel install</button></div>
+      </div>
+      <div class="strip">
+        ${stat('Download size', `${sz}<small>${unit}</small>`)}
+        ${stat('Installed version', inst ? inst.version : '—', !inst)}
+        ${stat('Latest version', p.version)}
+        ${stat('Launches', state.launches[p.id] || 0)}
+        ${stat('Last launched', state.lastLaunch[p.id] ? when(state.lastLaunch[p.id]) : '—', !state.lastLaunch[p.id])}
+      </div>
+      <div class="tabs" role="tablist" aria-label="${esc(p.name)} sections">
+        <button class="tabbtn" role="tab" data-tab="overview" aria-selected="${state.tab === 'overview'}" aria-controls="tp-overview">Overview</button>
+        <button class="tabbtn" role="tab" data-tab="log" aria-selected="${state.tab === 'log'}" aria-controls="tp-log">Install log<span class="n" id="logCount">${nLogs}</span></button>
+      </div>
+      <div class="tabpanel" id="tp-overview" role="tabpanel" ${state.tab === 'overview' ? '' : 'hidden'}>
+        <dl class="kv">
+          <dt>Install location</dt><dd><span class="path mono" title="${esc(platformDir(p))}">${esc(platformDir(p))}</span><button class="btn" data-browse="${p.id}" ${inst || st === 'installing' ? 'disabled title="Uninstall to move this platform"' : ''}>Change</button></dd>
+          <dt>Executable</dt><dd class="mono" style="color:var(--soft)">${esc(p.exe)}</dd>
+          <dt>License</dt><dd>${lic ? `<span class="mono">${maskKey(lic.key)}</span><span style="color:var(--muted)">activated ${fmtDate(lic.at)}</span>` : '<span style="color:var(--muted)">Not included in any key on this machine</span>'}</dd>
+          <dt>Package source</dt><dd class="mono" style="color:var(--soft)">${esc(serverUrl())}/v1/packages/${p.id}</dd>
+          ${inst ? `<dt>Remove</dt><dd><span style="color:var(--muted);flex:1">Deletes the program files. Your license stays active.</span><button class="btn" data-uninstall="${p.id}" ${st === 'running' ? 'disabled' : ''}>Uninstall</button></dd>` : ''}
+        </dl>
+      </div>
+      <div class="tabpanel" id="tp-log" role="tabpanel" ${state.tab === 'log' ? '' : 'hidden'}>
+        <div class="console" id="console" tabindex="0" aria-label="Install log">${nLogs ? state.logs.filter(e => e.pid === p.id).slice(-200).map(e => lineHtml(e)).join('') : `<div class="empty">${st === 'locked' ? 'Activate a license that includes this platform to install it.' : 'Install this platform to see the download and setup log here.'}</div>`}</div>
+      </div>
+    </div>`;
+    const con = $('#console'); if (con) con.scrollTop = con.scrollHeight;
+    if (st === 'installing') paintProgress();
+  }
+
+  function renderAll() { renderList(); renderDetail(); renderChrome(); }
+
+  function select(id, focus) {
+    state.selected = id;
+    renderList(); renderDetail();
+    if (focus) $(`.lib-item[data-id="${id}"]`)?.focus();
+  }
+  $('#libList').addEventListener('click', (e) => { const b = e.target.closest('.lib-item'); if (b) select(b.dataset.id, true); });
+  $('#libList').addEventListener('keydown', (e) => {
+    const items = $$('.lib-item'); const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const n = items[Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];
+      select(n.dataset.id, true);
+    } else if (e.key === 'Enter' && state.selected) {
+      const st = stateOf(state.selected);
+      if (st === 'installed') launch(state.selected); else if (st === 'available') enqueue([state.selected]);
+    }
+  });
+  $('#detail').addEventListener('click', (e) => {
+    const t = (s) => e.target.closest(s);
+    let b;
+    if (t('[data-activate]')) openActivate(t('[data-activate]'));
+    else if (t('[data-select-first]')) select(state.licenses[0].products[0], true);
+    else if ((b = t('[data-install]'))) enqueue([b.dataset.install]);
+    else if ((b = t('[data-dequeue]'))) { state.queue = state.queue.filter(x => x !== b.dataset.dequeue); log(b.dataset.dequeue, 'warn', 'Removed from install queue'); renderAll(); }
+    else if ((b = t('[data-launch]'))) launch(b.dataset.launch);
+    else if ((b = t('[data-stop]'))) stop(b.dataset.stop);
+    else if ((b = t('[data-uninstall]'))) askUninstall(b.dataset.uninstall, b);
+    else if ((b = t('[data-tab]'))) { state.tab = b.dataset.tab; renderDetail(); $(`[data-tab="${state.tab}"]`).focus(); }
+    else if (t('#cancelInstall')) cancelInstall();
+  });
+  $('#detail').addEventListener('keydown', (e) => {
+    if (!e.target.closest('[data-tab]') || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    state.tab = state.tab === 'overview' ? 'log' : 'overview'; renderDetail(); $(`[data-tab="${state.tab}"]`).focus();
+  });
+
+  // ---------- Install engine ----------
+  function enqueue(ids) {
+    const add = ids.filter(id => entitled(id) && (stateOf(id) === 'available' || stateOf(id) === 'update')
+                           && !state.queue.includes(id) && !(state.job && state.job.id === id));
+    const blocked = ids.filter(id => entitled(id) && !add.includes(id));
+    blocked.forEach(id => {
+      const st = stateOf(id);
+      if (st === 'installed') log(id, 'warn', 'Already up to date — nothing to install');
+      else if (state.queue.includes(id) || (state.job && state.job.id === id)) log(id, 'warn', 'Already queued — watch the progress bar');
+      else log(id, 'error', `Cannot install right now (state: ${st})`);
+    });
+    if (!add.length) { renderAll(); return; }
+    add.forEach(id => { state.queue.push(id); log(id, 'info', `Queued for install · ${size(byId(id).size)} from ${parseHost(state.settings.server)}`); });
+    if (state.selected && add.includes(state.selected)) state.tab = 'log';
+    renderAll();
+    pump();
+  }
+  async function pump() {
+    if (state.job || !state.queue.length) return;
+    const id = state.queue.shift();
+    await install(id);
+    pump();
+  }
+  function paintProgress() {
+    const j = state.job; if (!j) return;
+    const pct = Math.floor(j.pct * 100);
+    const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+    const bar = $('#pcBar'); if (bar) bar.style.width = `${(j.pct * 100).toFixed(1)}%`;
+    set('pcPct', `${pct}%`); set('pcWhat', j.phase); set('pcDone', size(j.done));
+    set('pcSpeed', j.speed ? `${j.speed.toFixed(1)} MB/s` : '—');
+    set('pcEta', j.speed && j.pct < 1 ? `${Math.max(1, Math.ceil((j.total - j.done) / j.speed))} s` : '—');
+    const mini = document.getElementById(`mini-${j.id}`); if (mini) mini.style.width = `${(j.pct * 100).toFixed(1)}%`;
+    const st = $(`[data-st="${j.id}"]`); if (st) st.textContent = `${pct}%`;
+    renderTask();
+  }
+  async function install(id) {
+    const p = byId(id);
+    const dir = platformDir(p);
+    const job = state.job = { id, pct: 0, done: 0, total: p.size, speed: 0, phase: 'Requesting package', cancelled: false, started: performance.now() };
+    let lastDone = 0, lastT = performance.now();
+    renderAll();
+    const fail = (msg) => {
+      const cancelled = job.cancelled && /cancel/i.test(msg);
+      if (!cancelled) log(id, 'error', msg);
+      state.job = null; renderAll();
+      toast(cancelled ? `${p.name} install cancelled` : `${p.name} install failed`, cancelled ? { tone: 'warn' } : { tone: 'neg', sub: msg });
+      pump();
+    };
+    __on('installEvent', (m) => {
+      if (state.job !== job || m.id !== id) return;
+      const ph = m.phase;
+      if (ph === 'pct') {
+        const f = Math.max(0, Math.min(1, typeof m.pct === 'number' ? m.pct : 0));
+        job.pct = f;
+        if (m.doneMB != null) job.done = m.doneMB; else job.done = f * job.total;
+        if (m.totalMB) job.total = m.totalMB;
+        const t = performance.now(), dt = (t - lastT) / 1000;
+        if (dt > 0.4 && job.done > lastDone) job.speed = (job.done - lastDone) / dt;
+        if (m.file) job.phase = `Downloading ${String(m.file).split(/\\|\//).pop()}`;
+        lastDone = job.done; lastT = t;
+        paintProgress();
+      } else if (ph === 'phase') {
+        job.phase = m.text || job.phase; paintProgress();
+      } else if (ph === 'log') {
+        log(id, m.lvl || 'info', String(m.msg || '').slice(0, 220));
+      } else if (ph === 'done') {
+        job.done = job.total; job.pct = 1; paintProgress();
+        state.installed[id] = { version: m.version || p.version, at: Date.now(), dir: m.dir || dir };
+        const secs = ((performance.now() - job.started) / 1000).toFixed(1);
+        state.job = null;
+        log(id, 'ok', `Installed ${p.name} ${m.version || p.version} in ${secs} s`);
+        persist(true); renderAll();
+        toast(`${p.name} installed`, { sub: `${size(p.size)} · ${state.installed[id].dir}` });
+        pump();
+      } else if (ph === 'failed') {
+        fail(String(m.text || 'Install failed'));
+      }
+    });
+    __post({ t: 'install', id });
+  }
+  function cancelInstall() {
+    const j = state.job; if (!j) return;
+    j.cancelled = true;
+    log(j.id, 'warn', `Install cancelled at ${Math.floor(j.pct * 100)}%`);
+    __post({ t: 'cancel' });
+  }
+  function askUninstall(id, opener) {
+    const p = byId(id);
+    confirmAction({
+      title: `Uninstall ${p.name}?`, desc: `This deletes the files in ${platformDir(p)}. Your license stays active, so you can install it again at any time.`,
+      ok: `Uninstall ${p.name}`, cancel: 'Keep installed', danger: true, opener,
+      run: () => {
+        log(id, 'warn', `Uninstalling · removing ${platformDir(p)}`);
+        __on('uninstallDone', (m) => {
+          if (!m || m.id !== id) return;
+          if (!m.ok) { log(id, 'error', m.text || 'Uninstall failed'); toast(`${p.name} uninstall failed`, { tone: 'neg', sub: m.text || '' }); return; }
+          delete state.installed[id];
+          persist(true); renderAll();
+          toast(`${p.name} uninstalled`, { tone: 'warn' });
+        });
+        __post({ t: 'uninstall', id });
+      }
+    });
+  }
+
+  // ---------- Launch ----------
+  let launchCtx = null;
+  const RING = 2 * Math.PI * 56;
+  const CHECK = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+  const ring = (f) => { $('#ringBar').style.strokeDashoffset = String(RING * (1 - f)); };
+
+  async function launch(id) {
+    const p = byId(id);
+    if (!p || stateOf(id) !== 'installed' || launchCtx) return;
+    const ctx = launchCtx = { id, cancelled: false };
+    const ov = $('#launch');
+    ov.classList.remove('done');
+    $('#launchMark').textContent = p.mono;
+    $('#launchTitle').textContent = `Starting ${p.name}`;
+    $('#launchStep').textContent = 'Preparing';
+    $('#launchSteps').innerHTML = '';
+    $('#cancelLaunch').hidden = false;
+    ring(0.02);
+    ov.setAttribute('aria-hidden', 'false');
+    ov.classList.add('open');
+    renderList(); renderDetail();
+    $('#cancelLaunch').focus();
+    log(id, 'info', `Launching ${p.name}`);
+    __post({ t: 'launch', id });
+  }
+  function closeLaunch() {
+    launchCtx = null;
+    const ov = $('#launch');
+    ov.classList.remove('open'); ov.setAttribute('aria-hidden', 'true');
+    renderAll();
+    ($('[data-stop]') || $('[data-launch]') || $('.lib-item[aria-selected="true"]'))?.focus();
+  }
+  function cancelLaunch() {
+    if (!launchCtx || $('#launch').classList.contains('done')) return;
+    const id = launchCtx.id;
+    launchCtx.cancelled = true;
+    log(id, 'warn', 'Launch cancelled');
+    __post({ t: 'cancel' });
+    closeLaunch();
+  }
+  $('#cancelLaunch').addEventListener('click', cancelLaunch);
+  function stop(id) {
+    state.running.delete(id);
+    log(id, 'info', `${byId(id).name} closed`);
+    renderAll();
+    toast(`${byId(id).name} closed`, { tone: 'warn' });
+  }
+  // Native drive: steps stream in from the launcher process.
+  __on('launchEvent', (m) => {
+    if (!launchCtx || m.id !== launchCtx.id) return;
+    const p = byId(m.id);
+    const ov = $('#launch');
+      if (m.steps) {
+        let lis = $$('#launchSteps li');
+        for (let i = lis.length; i < m.steps.length; i++) {
+          $('#launchSteps').insertAdjacentHTML('beforeend', `<li><span class="ic">${CHECK}</span><span>${esc(m.steps[i])}</span><span class="ms"></span></li>`);
+        }
+        lis = $$('#launchSteps li');
+        lis.forEach((li, i) => {
+          if (i < (m.stepIdx || 0)) { if (li.classList.contains('active')) li.classList.replace('active', 'done'); }
+          else if (i === (m.stepIdx || 0)) { li.classList.add('active'); }
+          const ms = li.querySelector('.ms');
+          if (i === (m.stepIdx || 0) && m.stepMs != null) ms.textContent = `${m.stepMs} ms`;
+        });
+        $('#launchStep').textContent = m.label ? m.label : `${m.steps[Math.min(m.stepIdx || 0, m.steps.length - 1)]}…`;
+        const total = m.steps.length || 1;
+        ring(Math.max(0.02, (((m.stepIdx || 0) + (m.done ? 1 : 0.5)) / total) * 0.94));
+        return;
+      }
+    if (m.done) {
+      if (m.failed) {
+        renderConn();
+        log(m.id, 'error', m.text || `License check failed: ${parseHost(state.settings.server)} did not answer`);
+        closeLaunch();
+        toast(`${p.name} did not start`, { tone: 'neg', sub: m.text || 'License server unreachable. Check Settings.' });
+        return;
+      }
+      ring(1);
+      ov.classList.add('done');
+      $('#launchTitle').textContent = `${p.name} is running`;
+      $('#launchStep').textContent = state.settings.tray ? 'Trade Bay moves to the tray' : 'Window opened';
+      $('#cancelLaunch').hidden = true;
+      state.running.set(m.id, Date.now());
+      state.lastLaunch[m.id] = Date.now();
+      state.launches[m.id] = (state.launches[m.id] || 0) + 1;
+      log(m.id, 'ok', `${p.name} started`);
+      persist(true);
+      setTimeout(closeLaunch, 1000);
+      toast(`${p.name} launched`);
+      if (state.settings.tray) setTimeout(() => toast('Trade Bay minimised to tray', { tone: 'acc' }), 250);
+    }
+  });
+
+  // ---------- License activation (global) ----------
+  const formatKey = (raw) => raw.trim().replace(/\s+/g, '');
+  const keyComplete = (k) => k.length >= 12 && /^[A-Za-z0-9-]+$/.test(k);
+  let actOpener = null;
+
+  function openActivate(opener) {
+    actOpener = opener || document.activeElement;
+    renderActForm();
+    openDialog('#actDialog', actOpener, $('#keyInput'));
+  }
+  function renderActForm(errMsg, keep) {
+    const has = state.licenses.length > 0;
+    const unl = PLATFORMS.filter(p => !entitled(p.id)).length;
+    $('#actBody').innerHTML = `
+      <div class="dialog-body">
+        <h2 id="actTitle">${has ? 'Your license' : 'Activate license'}</h2>
+        <p>${has ? (unl ? 'Add another key to unlock more platforms.' : 'Every platform is unlocked on this computer.') : 'Enter the key from your purchase email. The platforms you bought unlock automatically.'}</p>
+        ${has ? `<ul class="keys">${state.licenses.map(l => `<li><div class="k"><span class="mono">${maskKey(l.key)}</span><span style="display:flex;gap:8px;align-items:center"><span class="pill pos">Active</span><button class="btn btn-ghost" data-remove-lic="${esc(l.key)}" style="height:26px;font-size:12px;padding:0 8px">Remove</button></span></div><div class="apps">${l.products.map(id => esc(byId(id).name)).join(', ')} · activated ${fmtDate(l.at)}</div></li>`).join('')}</ul>` : ''}
+        ${unl ? `<div class="field" style="margin-top:20px">
+          <label class="label" for="keyInput">${has ? 'Another license key' : 'License key'}</label>
+          <div class="input-wrap">
+            <input class="input mono" id="keyInput" type="text" placeholder="LIC-XXXXXXXXXXXXXXXX" maxlength="64" autocomplete="off" spellcheck="false" aria-describedby="keyErr" value="${esc(keep || '')}" ${errMsg ? 'aria-invalid="true"' : ''}>
+            <button class="paste" id="pasteKey" type="button" aria-label="Paste license key" title="Paste">${ICON.paste}</button>
+          </div>
+          <span class="error" id="keyErr" role="alert" ${errMsg ? '' : 'hidden'}>${errMsg ? ICON.err + errMsg : ''}</span>
+        </div>` : ''}
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" data-close>${has && !unl ? 'Close' : 'Cancel'}</button>
+        ${unl ? `<button class="btn btn-primary" id="actGo">Activate license</button>` : ''}
+      </div>`;
+    $$('[data-remove-lic]', $('#actBody')).forEach(b => b.addEventListener('click', () => confirmRemoveLicense(b.dataset.removeLic)));
+    wireActForm();
+  }
+  function confirmRemoveLicense(key) {
+    const lic = state.licenses.find(l => l.key === key);
+    const names = lic ? lic.products.map(id => (byId(id) || { name: id }).name).join(', ') : '';
+    confirmAction({
+      title: 'Remove this license?',
+      desc: `${maskKey(key)} unlocks ${names || 'some platforms'} on this computer. Those platforms stay locked until you activate a key again.`,
+      ok: 'Remove license', cancel: 'Keep license', danger: true, opener: $('#actBody'),
+      run: () => {
+        state.licenses = state.licenses.filter(l => l.key !== key);
+        persist(true);
+        __post({ t: 'removeLicense', key });
+        renderAll();
+        renderActForm();
+      }
+    });
+  }
+  function wireActForm() {
+    $$('[data-close]', $('#actDialog')).forEach(b => b.addEventListener('click', closeDialog));
+    const input = $('#keyInput'); if (!input) return;
+    const err = $('#keyErr');
+    const setErr = (m) => { err.hidden = !m; err.innerHTML = m ? ICON.err + esc(m) : ''; input.setAttribute('aria-invalid', m ? 'true' : 'false'); };
+    const validate = (req) => {
+      const v = input.value;
+      if (!v) { setErr(req ? 'Enter your license key.' : ''); return false; }
+      if (!keyComplete(v)) { setErr(`That key does not look right. ${v.length} characters entered.`); return false; }
+      setErr(''); return true;
+    };
+    input.addEventListener('input', () => {
+      const pos = input.selectionStart, before = input.value;
+      const n = before.slice(0, pos).replace(/[^A-Za-z0-9]/g, '').length;
+      const next = formatKey(before); input.value = next;
+      let i = 0, seen = 0; while (i < next.length && seen < n) { if (next[i] !== '-') seen++; i++; }
+      input.setSelectionRange(i, i);
+      if (!err.hidden) validate(false);
+    });
+    input.addEventListener('blur', () => { if (input.value) validate(false); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+    $('#pasteKey').addEventListener('click', async () => {
+      try { input.value = formatKey(await navigator.clipboard.readText()); validate(false); }
+      catch (_) { setErr('Paste was blocked by the browser. Press Ctrl+V in the field instead.'); }
+      input.focus();
+    });
+    const go = () => { if (validate(true)) runActivation(input.value); else input.focus(); };
+    $('#actGo').addEventListener('click', go);
+  }
+
+  let actSeq = 0;
+  async function runActivation(key) {
+    const host = parseHost(state.settings.server);
+    const k = maskKey(key) || key.slice(0, 5) + '…';
+    const seq = ++actSeq;
+    $('#actBody').innerHTML = `<div class="dialog-body" aria-live="polite">
+        <h2 id="actTitle">Activating</h2><p class="mono" style="color:var(--muted)">${esc(k)} · ${esc(host)}</p>
+        <ul class="act-steps"><li><span class="ic">${ICON.ok}</span>Contacting license server</li></ul>
+      </div><div class="dialog-foot"><button class="btn" disabled>Activating…</button></div>`;
+    const lis = $$('.act-steps li', $('#actBody'));
+    lis[0].classList.add('active');
+    log(null, 'info', `POST ${state.settings.server}/v1/activate · key ${k}`);
+    __on('activateResult', (m) => {
+      if (!m || m.seq !== seq) return;
+      lis[0].classList.replace('active', 'done');
+      if (!m.ok) {
+        log(null, 'error', `Activation failed: ${m.text || 'rejected'}`);
+        renderActForm(m.text || 'Activation failed. Check the key and try again.', key);
+        $('#keyInput')?.focus();
+        return;
+      }
+      state.connected = true; renderConn();
+      const products = m.products || [];
+      const fresh = products.filter(id => !entitled(id));
+      state.licenses.push({ key, products, at: m.at || Date.now() });
+      log(null, 'ok', `Key ${k} activated · unlocked ${products.map(id => byId(id) ? byId(id).name : id).join(', ')}`);
+      persist(true);
+      renderAll();
+      showUnlocked(products, fresh);
+      toast('License activated', { sub: `${products.length} ${products.length === 1 ? 'platform' : 'platforms'} unlocked` });
+    });
+    __post({ t: 'activate', key, seq });
+  }
+
+  function showUnlocked(products, fresh) {
+    const n = products.length;
+    const toInstall = products.filter(id => !state.installed[id]);
+    $('#actBody').innerHTML = `<div class="dialog-body">
+        <h2 id="actTitle">${n === 1 ? '1 platform unlocked' : `${n} platforms unlocked`}</h2>
+        <p>Your key includes the platforms below. Install them now or later from Library.</p>
+        <ul class="unlocked">${products.map((id, i) => { const p = byId(id); return `<li style="animation-delay:${120 + i * 90}ms"><span class="mark" aria-hidden="true">${p.mono}</span><span class="nm">${esc(p.name)}</span><span style="color:var(--muted);font-size:12px">${fresh.includes(id) ? size(p.size) : 'Already unlocked'}</span></li>`; }).join('')}</ul>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" id="actLater">Install later</button>
+        ${toInstall.length ? `<button class="btn btn-primary" id="actInstall">${ICON.down}Install ${toInstall.length === 1 ? byId(toInstall[0]).name : `all ${toInstall.length}`}</button>` : ''}
+      </div>`;
+    $('#actLater').addEventListener('click', () => { closeDialog(); select(products[0], true); });
+    const ib = $('#actInstall');
+    if (ib) { ib.addEventListener('click', () => { closeDialog(); state.selected = toInstall[0]; state.tab = 'log'; enqueue(toInstall); $(`.lib-item[data-id="${toInstall[0]}"]`)?.focus(); }); ib.focus(); }
+    else $('#actLater').focus();
+  }
+  $('#licBtn').addEventListener('click', () => openActivate($('#licBtn')));
+
+  function renderChrome() {
+    const n = PLATFORMS.filter(p => entitled(p.id)).length;
+    const b = $('#licBtn');
+    b.className = 'lic-btn ' + (n ? 'licensed' : 'unlicensed');
+    $('#licBtnText').textContent = n ? `${n} of ${PLATFORMS.length} licensed` : 'Activate license';
+    $('#sbRunning').innerHTML = state.running.size ? `<span class="dot pos"></span>${state.running.size} running` : '';
+    renderTask();
+  }
+  function renderTask() {
+    const j = state.job;
+    $('#sbTask').innerHTML = j ? `<span class="spinner" aria-hidden="true" style="width:10px;height:10px"></span>Installing ${esc(byId(j.id).name)} · ${Math.floor(j.pct * 100)}%${state.queue.length ? ` · ${state.queue.length} queued` : ''}` : '';
+  }
+
+  // ---------- Views ----------
+  function showView(v) {
+    state.view = v;
+    $$('.rail-btn').forEach(b => b.toggleAttribute('aria-current', b.dataset.view === v));
+    $$('.rail-btn[aria-current]').forEach(b => b.setAttribute('aria-current', 'page'));
+    $$('.view').forEach(s => s.hidden = s.id !== `view-${v}`);
+    $('#crumb').textContent = { library: 'Library', logs: 'Logs', settings: 'Settings' }[v];
+    if (v === 'logs') { state.unseenLogs = false; $('#logBadge').hidden = true; renderLogFilters(); renderLogs(); }
+  }
+  $$('.rail-btn').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+
+  // ---------- Settings ----------
+  const srv = $('#serverAddr');
+  const srvErr = $('#serverError');
+  function validateServer() {
+    const v = srv.value.trim();
+    const m = !v ? 'Enter the license server address.' : !parseHost(v) ? 'Use a hostname such as license.tradebay.io, or a full https:// address.' : '';
+    srvErr.hidden = !m; srvErr.innerHTML = m ? ICON.err + esc(m) : ''; srv.setAttribute('aria-invalid', m ? 'true' : 'false');
+    return !m;
+  }
+  srv.addEventListener('input', () => { $('#saveServer').disabled = srv.value.trim() === state.settings.server; if (!srvErr.hidden) validateServer(); });
+  srv.addEventListener('blur', () => { if (srv.value) validateServer(); });
+  srv.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('#saveServer').disabled) $('#saveServer').click(); });
+  $('#saveServer').addEventListener('click', async () => {
+    if (!validateServer()) { srv.focus(); return; }
+    state.settings.server = srv.value.trim();
+    persist(true);
+    $('#saveServer').disabled = true;
+    log(null, 'info', `License server set to ${parseHost(state.settings.server)}`);
+    const ok = await probe();
+    toast(ok ? 'Server address saved' : 'Server address saved, but it did not answer', { tone: ok ? 'pos' : 'neg', sub: ok ? `${parseHost(state.settings.server)} · ${state.latency} ms` : 'Check the address and save again' });
+    renderDetail();
+  });
+  ['startup', 'updates', 'tray'].forEach(k => {
+    const el = $('#' + k);
+    el.setAttribute('aria-checked', String(!!state.settings[k]));
+    el.addEventListener('click', () => {
+      state.settings[k] = !state.settings[k];
+      el.setAttribute('aria-checked', String(state.settings[k]));
+      persist(true);
+      toast(`${$('#lbl-' + k).textContent}: ${state.settings[k] ? 'on' : 'off'}`, { tone: 'acc' });
+    });
+  });
+  const dir = $('#installDir');
+  function commitDir() {
+    const v = dir.value.trim();
+    if (!v) { dir.value = state.settings.installDir; return; }
+    if (v === state.settings.installDir) return;
+    state.settings.installDir = v; persist(true); renderDetail();
+    toast('Default install directory saved', { sub: v, tone: 'acc' });
+  }
+  dir.addEventListener('change', commitDir);
+  dir.addEventListener('keydown', (e) => { if (e.key === 'Enter') dir.blur(); });
+
+  // ---------- Folder picker (native dialog via the launcher) ----------
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-browse]'); if (!b || b.disabled) return;
+    __post({ t: 'browse', key: b.dataset.browse });
+  });
+  __on('folderPick', (m) => {
+    if (!m) return;
+    if (m.key === 'default') { dir.value = m.dir || dir.value; commitDir(); }
+    else {
+      const p = byId(m.key); if (!p) return;
+      const def = `${state.settings.installDir.replace(/[\\/]+$/, '')}\\${p.folder}`;
+      if (m.dir && m.dir !== def) state.dirs[p.id] = m.dir; else delete state.dirs[p.id];
+      persist(true); renderDetail();
+      toast(`${p.name} will install to`, { sub: m.dir || def, tone: 'acc' });
+    }
+  });
+
+  // ---------- Dialog plumbing ----------
+  let openOv = null, retFocus = null;
+  const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function openDialog(sel, opener, initial) {
+    openOv = $(sel); retFocus = opener || document.activeElement;
+    openOv.hidden = false;
+    (initial || $(FOCUSABLE, openOv))?.focus();
+  }
+  function closeDialog() {
+    if (!openOv) return;
+    openOv.hidden = true; openOv = null;
+    if (retFocus && document.contains(retFocus)) retFocus.focus();
+  }
+  $$('.overlay').forEach(o => {
+    o.addEventListener('mousedown', (e) => { if (e.target === o && !$('#actBody .act-steps')) closeDialog(); });
+    $$('[data-close]', o).forEach(b => b.addEventListener('click', closeDialog));
+  });
+  function confirmAction({ title, desc, ok, cancel, danger, run, opener }) {
+    $('#cfTitle').textContent = title; $('#cfDesc').textContent = desc;
+    $('#cfCancel').textContent = cancel;
+    const b = $('#cfOk'); b.textContent = ok; b.className = 'btn ' + (danger ? 'btn-danger' : 'btn-primary');
+    b.onclick = () => { closeDialog(); run(); };
+    openDialog('#confirmDialog', opener || document.activeElement, $('#cfCancel'));
+  }
+  function trap(box, e) {
+    const f = $$(FOCUSABLE, box).filter(x => x.offsetParent !== null);
+    if (!f.length) { e.preventDefault(); return; }
+    const a = f[0], z = f[f.length - 1];
+    if (!box.contains(document.activeElement)) { e.preventDefault(); a.focus(); }
+    else if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+    else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+  }
+  document.addEventListener('keydown', (e) => {
+    if (openOv) {
+      if (e.key === 'Escape' && !$('#actBody .act-steps')) { e.preventDefault(); closeDialog(); }
+      else if (e.key === 'Tab') trap(openOv, e);
+      return;
+    }
+    if (launchCtx) {
+      if (e.key === 'Escape') { e.preventDefault(); cancelLaunch(); }
+      else if (e.key === 'Tab') trap($('#launch'), e);
+    }
+  });
+
+  // ---------- Window controls (native frame) ----------
+  $('#winMin').addEventListener('click', () => __post({ t: 'min' }));
+  $('#winMax').addEventListener('click', () => __post({ t: 'max' }));
+  $('#winClose').addEventListener('click', () => confirmAction({
+    title: 'Quit Trade Bay?', desc: state.job ? `${byId(state.job.id).name} is still installing and will stop.` : 'Running platforms stay open. You can reopen the launcher at any time.',
+    ok: 'Quit Trade Bay', cancel: 'Keep open', opener: $('#winClose'),
+    run: () => { if (state.job) cancelInstall(); __post({ t: 'close' }); }
+  }));
+  $('#reopen').addEventListener('click', () => { $('#closed').hidden = true; $('#licBtn').focus(); });
+  // Drag on the title bar (buttons excluded)
+  document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (!e.target.closest('.titlebar')) return;
+    if (e.target.closest('button')) return;
+    __post({ t: 'drag' });
+  });
+
+  // ---------- Boot ----------
+  $('#splashAscii').innerHTML = asciiHtml(150);
+  let booted = false;
+  __on('init', (m) => {
+    if (!m || booted) return; booted = true;
+    PLATFORMS = m.catalog || [];
+    state.licenses = m.licenses || [];
+    state.installed = m.installed || {};
+    state.dirs = m.dirs || {};
+    state.settings = Object.assign(state.settings, m.settings || {});
+    state.lastLaunch = m.lastLaunch || {};
+    state.launches = m.launches || {};
+    state.logs = m.logs || [];
+    state.running = new Map(m.running || []);
+  const vEl = document.getElementById('appVer');
+  if (vEl && m.ver) vEl.textContent = 'v' + m.ver;
+    srv.value = state.settings.server;
+    dir.value = state.settings.installDir;
+    renderAll(); renderConn(); renderLogFilters(); renderLogs();
+    // Boot is decoupled from the license server: open now with saved data,
+    // probe runs in the background and only feeds the status bar.
+    $('#bootText').textContent = 'Launching TradeBay';
+    probe();
+    setTimeout(() => {
+      $('#splash').classList.add('gone');
+      setTimeout(() => { const s = $('#splash'); if (s) s.remove(); }, 750);
+      $('#licBtn').focus({ preventScroll: true });
+    }, 900);
+  });
+  __on('catalog', (m) => { if (!booted || !m || !m.catalog) return; PLATFORMS = m.catalog; renderAll(); });
+  __on('update', (m) => {
+    if (!booted || !m) return;
+    if (m.installed) state.installed = m.installed;
+    if (m.dirs) state.dirs = m.dirs;
+    if (m.licenses) state.licenses = (m.licenses && m.licenses.licenses) || [];
+    renderAll();
+  });
+  const sendReady = () => { if (!booted) { __post({ t: 'ready' }); setTimeout(sendReady, 150); } };
+  setTimeout(sendReady, 80);
+  // Watchdog: never strand the user on the splash if init never arrives.
+  setTimeout(() => {
+    if (booted) return;
+    $('#bootText').textContent = 'Launching TradeBay';
+    $('#splash').classList.add('gone');
+    setTimeout(() => { const s = $('#splash'); if (s) s.remove(); }, 750);
+  }, 4000);
+  setInterval(() => { if (state.view === 'library' && !state.job && !launchCtx && !openOv) renderDetail(); }, 60000);
+})();
+</script>
+</body>
+</html>

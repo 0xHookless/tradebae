@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Trading Platform Release Manifest",
+  "type": "object",
+  "required": ["app_id", "display_name", "release_version", "manifest_version", "files", "total_size"],
+  "properties": {
+    "app_id": { "type": "string" },
+    "display_name": { "type": "string" },
+    "release_version": { "type": "string" },
+    "manifest_version": { "type": "integer", "minimum": 1 },
+    "published_at": { "type": "string" },
+    "total_size": { "type": "integer", "minimum": 0 },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["relative_path", "size", "sha256", "role", "required"],
+        "properties": {
+          "relative_path": { "type": "string", "pattern": "^(?!/)(?!.*\\.\\.)(?!.*:)" },
+          "size": { "type": "integer", "minimum": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+          "role": { "enum": ["normal", "executable"] },
+          "required": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
